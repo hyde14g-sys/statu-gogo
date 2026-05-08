@@ -1,0 +1,3244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>史塔兔服飾計算機</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #23232e;
+    --border: #5a3030;
+    --accent: #f5c542;
+    --accent2: #ff6b6b;
+    --green: #4ade80;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(245,197,66,0.3);
+  }
+  .header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.5rem; }
+  }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background-image: linear-gradient(var(--surface), var(--surface)),
+                      linear-gradient(135deg, #7a3535, #b8860b, #7a3535);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 12px rgba(90,30,30,0.18);
+  }
+  .panel-header {
+    background: var(--surface2);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .panel-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .panel-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .panel-body { padding: 14px; }
+
+  /* Input area */
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.88rem;
+    padding: 12px;
+    resize: vertical;
+    line-height: 1.7;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  button {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #111;
+  }
+  .btn-primary:hover { background: #ffd966; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+  .btn-danger:hover { background: var(--accent2); color: #fff; }
+
+  /* Order Table */
+  .order-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  .order-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 9px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .order-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .order-table tr:last-child td { border-bottom: none; }
+  .order-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Editable cells */
+  .edit-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.87rem;
+    padding: 4px 7px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .edit-input:focus { border-color: var(--accent); }
+  .edit-input.num { text-align: right; font-family: 'Space Mono', monospace; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .tag-parsed { background: rgba(74,222,128,0.15); color: var(--green); }
+  .tag-preorder { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .tag-preorder-arr { background: rgba(129,140,248,0.15); color: #818cf8; }
+  .tag-oos { background: rgba(251,113,133,0.15); color: #fb7185; }
+  .tag-manual { background: rgba(245,197,66,0.15); color: var(--accent); }
+
+  /* Summary bar */
+  .summary-bar {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .summary-stat { display: flex; flex-direction: column; }
+  .summary-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .grand-total .summary-val { font-size: 1.5rem; color: var(--green); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* Calculator */
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .calc-display {
+    grid-column: 1 / -1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: right;
+    font-family: 'Space Mono', monospace;
+    min-height: 56px;
+  }
+  .calc-expr { font-size: 0.75rem; color: var(--muted); min-height: 18px; }
+  .calc-val { font-size: 1.4rem; color: var(--text); }
+  .calc-btn {
+    padding: 13px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+  }
+  .calc-btn:hover { background: var(--border); transform: translateY(-1px); }
+  .calc-btn.op { color: var(--accent); }
+  .calc-btn.eq { background: var(--accent); color: #111; border-color: var(--accent); }
+  .calc-btn.eq:hover { background: #ffd966; }
+  .calc-btn.cls { color: var(--accent2); border-color: rgba(255,107,107,0.3); }
+  .calc-btn.span2 { grid-column: span 2; }
+
+  /* Add row */
+  .add-row-form {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+  .add-row-form input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    padding: 7px 10px;
+    outline: none;
+  }
+  .add-row-form input:focus { border-color: var(--accent); }
+  .add-row-form input.num { font-family: 'Space Mono', monospace; text-align: right; width: 80px; }
+
+  /* Export */
+  .export-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-height: 60px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .notice b { color: var(--accent); }
+
+  /* full-width panel */
+  .full { grid-column: 1 / -1; }
+
+  /* Profile buttons */
+  .profile-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .profile-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .profile-btn.active-profile {
+    background: var(--accent);
+    color: #111;
+    border-color: var(--accent);
+  }
+
+  /* Item tag buttons */
+  .item-tag-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .item-tag-btn:hover, .item-tag-btn.selected {
+    border-color: var(--accent);
+    background: rgba(245,197,66,0.12);
+    color: var(--accent);
+  }
+  .item-tag-btn.selected { font-weight: 700; }
+  .item-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    flex-wrap: wrap;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-num-input {
+    width: 70px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+    text-align: right;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .item-num-input:focus { border-color: var(--accent); }
+  .item-num-input::-webkit-inner-spin-button,
+  .item-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  /* Scroll */
+  .table-wrap { overflow-x: auto; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .ai-key-row label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+</style>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBa05CUZ2kvELPyGcYFVqOARk8I0JLLH9Y",
+    authDomain: "gogostar2.firebaseapp.com",
+    projectId: "gogostar2",
+    storageBucket: "gogostar2.firebasestorage.app",
+    messagingSenderId: "785805528150",
+    appId: "1:785805528150:web:9263d9c3096645af24fff7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 同步 Firestore 資料到 customerDb
+  const q = query(collection(db, "customers"), orderBy("timestamp", "desc"));
+  onSnapshot(q, (snapshot) => {
+    window.customerDb = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id }));
+    if (typeof renderCustomerDb === 'function') renderCustomerDb();
+    if (typeof refreshStats === 'function') refreshStats();
+  });
+
+  // 儲存到 Firestore
+  window.saveToFirestore = async (record) => {
+    record.timestamp = Date.now();
+    await addDoc(collection(db, "customers"), record);
+  };
+
+  // 從 Firestore 刪除
+  window.deleteFromFirestore = async (docId) => {
+    await deleteDoc(doc(db, "customers", docId));
+  };
+
+  // 更新 Firestore 文件
+  window.updateFirestore = async (docId, data) => {
+    const { updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await updateDoc(doc(db, "customers", docId), data);
+  };
+</script>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGFhNjAxMDAwMDA4MDIwMDAwYTYwMjAwMDAzODAzMDAwMGRmMDMwMDAwMjYwNTAwMDBjMDA2MDAwMGRhMDYwMDAwNDkwNzAwMDBhMzA3MDAwMDBhMDkwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAPAA8AwEiAAIRAQMRAf/EAHEAAAICAwEAAAAAAAAAAAAAAAQFAwcAAQYCEAABAgQDBgMIAgMAAAAAAAABAhEAAxIhBDFBEBMiUWGRMnGhBSBCUoGxwfBy4RQ00REBAAEDAwMEAgMAAAAAAAAAAREAITFBUWEQcYGRobHwIMHR4fH/2gAMAwEAAgADAAAAAblzNazkHlf9YqNYt6v6oiLpsGJOHyCep4fSZpzPa+DnBNbZoKx+vAPI3le9tWw5ECx1v03LRs0XhXdE8UpYCGuu5qZc6jKXvRocGUM2er5kFKnWf//aAAgBAQABBQLYnGK3s1ZdGLQT7qo3wREuSgGTPrVltmLCBOxalmVicUIk4hJT7QxCJacKAdvtidvJmClprxZeRIVuT7Qr3kmSmWNmLkJ305W7jCYhTrQJpx+FVvZfhiYFROxIUpCguAGgYoRid5Mmodoxy2QVplx/kyZqsRucOZOKRNiYDvkhhGPgrVXJmF8aeKVNUkTZqkqkqqRH/9oACAEDAAE/AYxckIEsj4kjvAwylJUsDhTme3rcbEJqLRPQVSkqqJpLNoB2B+8JWUkKGYL8w46RNmmYXUXLAcrCMCkmYOEq8g8Kl1EXYahn/LN5xjpVCgyKR5WJ/eVtmCTTKUvk5N1JNmT8JBcVc2hOKJQpTuUsKi5V3qf1jEKK5MtaruWBqUolnd6iW+ltdn//2gAIAQIAAT8BMSpinkpqJ3qErN78A478lEot5xhJpIZRfRJIYqZwTmbWz1vbZOWQwT4llh01J+g7lhEuSE0W8CaEk5tb70iJCaQZRvT4edByfqLjsYCWicoVyhqCSf4lKhfzU1tW6QpDkKrIFuEZFv37Qkjeqv4kJp8wVVjzun9Gwm805msJHklIYX0cnvEyWROQmpTKBLBfC4ytTlblEvUcv3QbP//aAAgBAQAGPwLYx8BNI6QEpsS57f20JTUKyHp195XRR9C8LWchSP3vG/bnzyfxdj2hqQzC/mHe+nuFSiwEKMqUVJVqbekf6zg8j0hKrjd8MxJzD8/rAS/ErKz99IrCn3mVmNmftTtRI+ECtfkIPCodXijjsoeCzj/kSyl+MmUuu+fh7RSqm4CRkxAuMydc3a0W2lWqkX7wGsNSNA0BlqUXLuNISlSfjBcWyeJjS1GpikgHVDH1hNqbC3Lpssqn6PBNWVuvm3KPFVGVPaAzGk88+ggqSFOSKCBpox069Xe0B82v57G1VbvCirD7wPZVxytFxS/yhh3zhi9XLxd3jhkBwQ6w9r5t/cUpJClLDFyPEPweUB79diP5fiGctUdeZb8xIyu5Nh87frRLLB+HT5jFiz1O3J8vSCoKUDvCnM5AdoSTqkH02f/aAAgBAQEBPyHpMISQguLDPKJfikowEYGAc7odppsgK4ZcVP4NGFap9X9KUGUbG1l9zPahcgohXYSMlgNhvg8FM3aOJui96s7NrSTicPUeApVwBSUAUXBM6r3SfSipncjwjd2olCNJiOCjgDOIlpxQhiGYOhSEpAt3A1h9U3gIZjgUDS/VLhiOuA9vco0SISUiJ+/7RTtUEK5Znu8nirA5eEa8Ywk4w1G4UHNRswr9Fy0Ih0LzNgsTsaBBsdTwmAX2dHxTgTmgEsjh1yxaoQrKxC++P3eYoxULUUtj3f1S7l0INhktheUzNGAxel7LWx0ReEZs1c8WqIPbYmEINyd54q8hlgIE/frRSXye61JUkBixeMN2fHNT61G1AGwg/ROhbVmLL+/RHGUPy9prQoMoNhoSzQYXKCwz5Pux2KYJMJ0PYPehwIrgkNyNrqlqORQMWGQCVDnvCAUgJwl389Pu7qdliRKBGQYkFFRO7MJLKWLW4b0BcqCoVIUlvEYhM0YIscATZ8LOeaT25AUJQicE1HLNJkyXdD0//9oADAMBAQIBAwEAABCzeXT1OXa1c5z1crT/2gAIAQMBAT8QoM4u/G76X71mxjMQRheOEb9FAaoetvuxXwNNuTfRnVmrZ+QPIJErg0AWMGKcQBMiQkgWMF8tikl2EaIaWuo0OaLAq8IRqTpHQia12IhFDmhDLrS0kgAA5vWrMKQhuwg8wAEsLOn/2gAIAQIBAT8QUCmhVj0ml8IB/wAtfz1oKy2y1XB0FjEhSSIpNQGDEokzX9uRPqOiBBbgRlci8GIsU3JBlS++IJxrN+1Psguf3U6JYkknDcrByu/4C4qADj//2gAIAQEBAT8QpYqYpBAeSDOOUK2pqKE2fGC9AhuYQTy3qGJv+GD2p9GX3EoJ4JZ/oBbUzJZceCt2d1ryf7Duk0+t7CK80XW2agumNTnopBS0ASq1ev1Uw4aCwFJn1df6XiomQCD8hAjQxFysWWjVYByKeJUXLAvEbuomNd5hYYeck8RDpil2OJqqjK76LvrYbIDDmh/G5nGQbSEaNTbnAMDSg9TgDSAFpp863LS/zPJC4/SZzq5hXGx6BsczImKL5MWpfPhV6YQQTIQExsOVzitbpjEN2gL7nlNb68AWRnU48ekEFqJ30osLzhMXU48ua+an3oDXFbqkhiEKQDNvBhbxdHR344CnC8TUbqroqis/+B8IXVoeKnu0g/DT/WY2lBQOa2JzY7USFiKjqKyAYFiV46PH6ij2Q1RjkwRU0Qd0RTD/AHFZARTExzuASviNgEQJ+gyp8XuMhOgFC7pGNrot3en/2Q==" alt="史塔兔" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);box-shadow:0 0 16px rgba(245,197,66,0.4)">
+    <h1>史塔兔 GOGO STAR 2</h1>
+  </div>
+  <p id="dailyQuote" style="color:#39ff14;text-shadow:0 0 8px #39ff14;">輕輕鬆鬆算訂單 老婆辛苦了</p>
+</div>
+
+<div class="layout">
+
+  <!-- INPUT PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div class="panel-title"><span class="dot"></span><span style="color:#ffffff">新增訂單</span></div>
+    </div>
+    <div class="panel-body">
+
+      <!-- 客人類型 + 客戶名稱 -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color:var(--muted)">客人：</span>
+        <button id="btnOldCustomer" onclick="setCustomerType('old')" class="profile-btn active-profile" style="color:#4ade80;border-color:#4ade80;background:rgba(74,222,128,0.15)">👸 舊客人</button>
+        <button id="btnNewCustomer" onclick="setCustomerType('new')" class="profile-btn" style="color:#f472b6;border-color:#f472b6">👩 新客人</button>
+        <div style="flex:1;min-width:120px;position:relative">
+          <input id="customerNameInput" placeholder="👤 輸入客戶名稱..." style="
+            width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+            color:var(--text);font-size:0.85rem;padding:6px 10px;outline:none;
+            font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;"
+            oninput="onCustomerNameInput(this.value)"
+            onfocus="onCustomerNameInput(this.value)"
+            onblur="setTimeout(()=>hideCustomerDropdown(),200)"
+            onkeydown="onCustomerNameKey(event)">
+          <div id="customerDropdown" style="
+            display:none;position:absolute;top:100%;left:0;right:0;z-index:5000;
+            background:var(--surface);border:1px solid var(--accent);border-radius:0 0 8px 8px;
+            max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+          </div>
+        </div>
+      </div>
+
+      <!-- 品項輸入列表 -->
+      <div id="itemInputList"></div>
+
+      <!-- 新增一行按鈕 -->
+      <button onclick="addItemRow()" style="
+        width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border);
+        background:transparent;color:var(--muted);font-size:0.85rem;font-weight:700;
+        cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-top:6px;
+        transition:all 0.15s;"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ＋ 新增品項
+      </button>
+
+      <!-- 操作按鈕 -->
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn-primary" onclick="parseItemRows()">✅ 加入訂單明細</button>
+        <button class="btn-secondary" onclick="clearInput()">清除</button>
+      </div>
+
+      <!-- 貼上文字折疊區 -->
+      <div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="togglePasteArea()">
+          <span style="font-size:0.78rem;color:var(--muted)">📋 或貼上文字解析</span>
+          <span id="pasteArrow" style="font-size:0.72rem;color:var(--muted)">▶</span>
+        </div>
+        <div id="pasteArea" style="display:none;margin-top:8px">
+          <div style="position:relative">
+            <textarea id="inputText" placeholder=" " style="min-height:120px"></textarea>
+            <div id="typingDemo" style="
+              position:absolute;top:12px;left:12px;right:12px;bottom:12px;
+              pointer-events:none;font-family:'Noto Sans TC',sans-serif;
+              font-size:0.88rem;line-height:1.7;color:var(--muted);
+              white-space:pre-wrap;overflow:hidden;"></div>
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn-secondary" onclick="parseText()">🔍 解析文字</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ORDER TABLE PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="panel-title"><span class="dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></span><span style="color:#ffffff">訂單明細</span></div>
+        <div id="orderCustomerTag" style="display:none;background:rgba(74,222,128,0.15);border:1px solid #4ade80;border-radius:6px;padding:2px 10px;font-size:0.8rem;font-weight:700;color:#4ade80"></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>品項名稱</th>
+            <th style="width:90px;text-align:right">數量</th>
+            <th style="width:110px;text-align:right">單價</th>
+            <th style="width:120px;text-align:right">小計</th>
+            <th>備註</th>
+            <th style="width:60px;text-align:center">來源</th>
+            <th style="width:60px;text-align:center">缺貨</th>
+            <th style="width:50px"></th>
+          </tr>
+        </thead>
+        <tbody id="orderBody">
+          <tr><td colspan="7"><div class="empty-state"><div class="icon">👗👕👖👒🧦</div>尚無訂單資料<br>請貼上留言後按「解析訂單」</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add Row Form - Smart Merge -->
+    <div id="mergeFormArea" style="border-top:1px solid var(--border)">
+      <!-- 預留金餘額提示 -->
+      <div id="creditBalanceAlert" style="display:none;padding:10px 14px;background:rgba(96,165,250,0.08);border-bottom:1px dashed #60a5fa;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="color:#60a5fa;font-size:0.82rem;font-weight:700">💰</span>
+        <span id="creditBalanceText" style="flex:1;font-size:0.82rem;color:#60a5fa;font-weight:700"></span>
+        <button id="creditBalanceBtn" style="
+          padding:5px 12px;border-radius:6px;border:1px solid #60a5fa;
+          background:rgba(96,165,250,0.15);color:#60a5fa;font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap">
+          套用預留金
+        </button>
+        <button onclick="ignoreCreditBalance()" style="
+          padding:5px 8px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">略過</button>
+      </div>
+      <!-- 未結單提示（有未結單時顯示）-->
+      <div id="unsettledAlert" style="display:none;padding:10px 14px;background:rgba(251,113,133,0.08);border-bottom:1px dashed #fb7185;flex-wrap:wrap;align-items:center;gap:8px">
+        <span style="color:#fb7185;font-size:0.82rem;font-weight:700">⚠️ 此客戶有未結單：</span>
+        <div id="unsettledList" style="flex:1;font-size:0.8rem;color:var(--text)"></div>
+        <button onclick="mergeUnsettled()" style="
+          padding:5px 12px;border-radius:6px;border:1px solid #fb7185;
+          background:rgba(251,113,133,0.15);color:#fb7185;font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap">
+          🔗 合併未結單
+        </button>
+        <button onclick="dismissUnsettled()" style="
+          padding:5px 8px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">略過</button>
+      </div>
+      <!-- 隱藏的 inputs 保留給 mergeUnsettled 使用 -->
+      <input type="hidden" id="mergeAmount">
+      <input type="hidden" id="mergeQty">
+    </div>
+    <!-- 上期併單（手動輸入）-->
+    <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
+      <label style="color:#60a5fa;font-size:0.82rem;white-space:nowrap">🔗 上期併單</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">金額</label>
+        <input type="text" inputmode="numeric" id="manualMergeAmount" class="num" placeholder="上期總金額" style="width:120px"
+          oninput="applyManualMerge()">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">件數</label>
+        <input type="text" inputmode="numeric" id="manualMergeQty" class="num" placeholder="件數" style="width:80px"
+          oninput="applyManualMerge()">
+      </div>
+      <span style="font-size:0.78rem;color:var(--muted)">（手動輸入上期併單）</span>
+    </div>
+    <!-- 預留金 -->
+    <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
+      <label style="color:#f472b6;font-size:0.82rem;white-space:nowrap">💰 預留金</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">金額</label>
+        <input type="text" inputmode="numeric" id="reserveAmount" class="num" placeholder="預留金額" style="width:120px"
+          onkeydown="if(event.key==='Enter') applyReserve()"
+          oninput="applyReserve()">
+      </div>
+      <span style="font-size:0.78rem;color:var(--muted)">（從合計總金額中扣除）</span>
+    </div>
+
+    <!-- Summary -->
+    <div id="summaryBar" style="display:none">
+      <!-- 當期訂單統計 -->
+      <div class="summary-bar" style="border-top:1px solid var(--border)">
+        <div class="summary-stat">
+          <span class="summary-label">總品項數</span>
+          <span class="summary-val" id="totalItems">0</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-label">總數量</span>
+          <span class="summary-val" id="totalQty">0</span>
+        </div>
+        <div class="summary-stat" id="totalQtyAllBlock" style="display:none">
+          <span class="summary-label">這周件數</span>
+          <span class="summary-val" style="color:var(--accent)" id="totalQtyAllDisplay">0 件</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-label">當期訂單金額</span>
+          <span class="summary-val" id="currentAmount">$0</span>
+        </div>
+      </div>
+      <!-- 前期併單（有才顯示） -->
+      <div id="mergeStatBlock" style="display:none">
+        <div class="summary-bar" style="border-top:1px dashed var(--border);background:rgba(96,165,250,0.06)">
+          <div class="summary-stat">
+            <span class="summary-label">前期併單金額</span>
+            <span class="summary-val" style="color:#60a5fa" id="mergeAmountDisplay">$0</span>
+          </div>
+          <div class="summary-stat" id="mergeQtyBlock" style="display:none">
+            <span class="summary-label">上期件數</span>
+            <span class="summary-val" style="color:#60a5fa" id="mergeQtyDisplay">0 件</span>
+          </div>
+        </div>
+      </div>
+      <!-- 總計 -->
+      <div class="summary-bar grand-total" style="border-top:2px solid var(--border);flex-wrap:wrap;gap:16px">
+        <div class="summary-stat">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+            <span class="summary-label">合計總金額</span>
+            <span id="reserveBadge" style="display:none;font-size:0.75rem;color:#f472b6;font-family:'Space Mono',monospace;background:rgba(244,114,182,0.12);padding:1px 7px;border-radius:4px;border:1px solid rgba(244,114,182,0.3)"></span>
+          </div>
+          <span class="summary-val" id="totalAmount">$0</span>
+        </div>
+        <div class="summary-stat">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+            <span class="summary-label" style="color:#fb923c">＋60 超取</span>
+            <button id="btnShip60" onclick="setShipping('超商')" style="
+              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              border:1px solid #fb923c;background:transparent;color:#fb923c;font-family:'Noto Sans TC',sans-serif;
+              transition:all 0.15s">選擇</button>
+            <button id="btnFree60" onclick="setFreeShipping('超商')" style="
+              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
+              transition:all 0.15s">免運</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button onclick="changeShipCount('超商',-1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #fb923c;background:transparent;color:#fb923c;font-size:0.9rem;cursor:pointer;line-height:1">▼</button>
+            <span id="shipCount60" style="font-family:'Space Mono',monospace;font-size:0.85rem;color:#fb923c;min-width:16px;text-align:center">1</span>
+            <button onclick="changeShipCount('超商',1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #fb923c;background:transparent;color:#fb923c;font-size:0.9rem;cursor:pointer;line-height:1">▲</button>
+            <span style="font-family:'Space Mono',monospace;font-size:0.95rem;font-weight:700;color:#fb923c" id="amt60">$0</span>
+          </div>
+        </div>
+        <div class="summary-stat">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+            <span class="summary-label" style="color:#a78bfa">＋80 郵寄</span>
+            <button id="btnShip80" onclick="setShipping('郵局')" style="
+              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              border:1px solid #a78bfa;background:transparent;color:#a78bfa;font-family:'Noto Sans TC',sans-serif;
+              transition:all 0.15s">選擇</button>
+            <button id="btnFree80" onclick="setFreeShipping('郵局')" style="
+              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
+              transition:all 0.15s">免運</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button onclick="changeShipCount('郵局',-1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;font-size:0.9rem;cursor:pointer;line-height:1">▼</button>
+            <span id="shipCount80" style="font-family:'Space Mono',monospace;font-size:0.85rem;color:#a78bfa;min-width:16px;text-align:center">1</span>
+            <button onclick="changeShipCount('郵局',1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;font-size:0.9rem;cursor:pointer;line-height:1">▲</button>
+            <span style="font-family:'Space Mono',monospace;font-size:0.95rem;font-weight:700;color:#a78bfa" id="amt80">$0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div class="panel-title"><span class="dot" style="background:#60a5fa;box-shadow:0 0 8px #60a5fa"></span><span style="color:#ffffff">匯出文字</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:0.75rem;color:var(--muted)">帳號：</span>
+        <button id="btn_蛇郵局" class="profile-btn active-profile" style="color:#00cfff;border-color:#00cfff" onclick="openProfile('蛇郵局')">蛇郵局</button>
+        <button id="btn_蛇富邦" class="profile-btn" style="color:#00cfff;border-color:#00cfff" onclick="openProfile('蛇富邦')">蛇富邦</button>
+        <button id="btn_兔中信" class="profile-btn" style="color:#ff3355;border-color:#ff3355" onclick="openProfile('兔中信')">兔中信</button>
+        <button id="btn_亦郵局" class="profile-btn" style="color:#ff8c00;border-color:#ff8c00" onclick="openProfile('亦郵局')">亦郵局</button>
+        <button id="btn_亦中信" class="profile-btn" style="color:#ff8c00;border-color:#ff8c00" onclick="openProfile('亦中信')">亦中信</button>
+        <button class="btn-secondary" style="padding:5px 12px;font-size:0.78rem;color:#39ff14;border-color:#39ff14" onclick="generateExport()">重新產生</button>
+        <button class="btn-primary" style="padding:5px 14px;font-size:0.78rem" id="copyExportBtn" onclick="copyExport()">📋 複製文字</button>
+        <button class="btn-secondary" style="padding:5px 14px;font-size:0.78rem;color:#f59e0b;border-color:#f59e0b" onclick="saveCurrentCustomer()">💾 儲存本單</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="export-box" id="exportBox" style="max-height:380px;line-height:1.75">（解析訂單後自動產生）</div>
+    </div>
+  </div>
+
+  <!-- PROFILE MODAL -->
+  <div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:24px;width:320px;max-width:90vw">
+      <div style="font-weight:700;font-size:1rem;color:var(--accent);margin-bottom:16px" id="modalTitle">設定帳號</div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:5px">銀行名稱（2個中文字）＋ 銀行代碼（7碼數字）</label>
+        <input id="modalBankName" maxlength="9" placeholder="例：郵局7000000" style="
+          width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.9rem;padding:8px 10px;outline:none;
+          font-family:'Noto Sans TC',sans-serif;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:5px">帳號（14碼數字）</label>
+        <input id="modalAccNum" maxlength="14" placeholder="例：02814440162101" style="
+          width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.9rem;padding:8px 10px;outline:none;
+          font-family:'Space Mono',monospace;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:5px">戶名</label>
+        <input id="modalHolderName" maxlength="10" placeholder="例：傅本營" style="
+          width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.9rem;padding:8px 10px;outline:none;
+          font-family:'Noto Sans TC',sans-serif;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-secondary" onclick="closeProfileModal()">取消</button>
+        <button class="btn-primary" onclick="saveProfile()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALCULATOR PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div class="panel-title"><span class="dot" style="background:var(--green);box-shadow:0 0 8px var(--green)"></span><span style="color:#39ff14;text-shadow:0 0 8px #39ff14;">小算盤</span></div>
+    </div>
+    <div class="panel-body">
+      <div class="calc-grid">
+        <div class="calc-display">
+          <div class="calc-expr" id="calcExpr"></div>
+          <div class="calc-val" id="calcVal">0</div>
+        </div>
+        <button class="calc-btn cls span2" onclick="calcClear()">C 清除</button>
+        <button class="calc-btn op" onclick="calcDel()">⌫</button>
+        <button class="calc-btn op" onclick="calcOp('/')">÷</button>
+
+        <button class="calc-btn" onclick="calcNum('7')">7</button>
+        <button class="calc-btn" onclick="calcNum('8')">8</button>
+        <button class="calc-btn" onclick="calcNum('9')">9</button>
+        <button class="calc-btn op" onclick="calcOp('*')">×</button>
+
+        <button class="calc-btn" onclick="calcNum('4')">4</button>
+        <button class="calc-btn" onclick="calcNum('5')">5</button>
+        <button class="calc-btn" onclick="calcNum('6')">6</button>
+        <button class="calc-btn op" onclick="calcOp('-')">−</button>
+
+        <button class="calc-btn" onclick="calcNum('1')">1</button>
+        <button class="calc-btn" onclick="calcNum('2')">2</button>
+        <button class="calc-btn" onclick="calcNum('3')">3</button>
+        <button class="calc-btn op" onclick="calcOp('+')">+</button>
+
+        <button class="calc-btn span2" onclick="calcNum('0')">0</button>
+        <button class="calc-btn" onclick="calcDot()">.</button>
+        <button class="calc-btn eq" onclick="calcEq()">=</button>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn-secondary" onclick="addCalcToOrder()" title="把計算結果加入訂單">＋ 加入訂單</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CUSTOMER DATABASE PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div class="panel-title"><span class="dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span><span style="color:#f59e0b">👤 客戶訂單資料庫</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="padding:5px 14px;font-size:0.78rem" onclick="saveCurrentCustomer()">💾 儲存本單</button>
+        <input id="customerSearchInput" placeholder="搜尋客戶名稱..." style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 10px;outline:none;width:160px;
+          font-family:'Noto Sans TC',sans-serif;" oninput="searchCustomers()">
+      </div>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div id="customerDbEmpty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:0.88rem">
+        <div style="font-size:2.5rem;margin-bottom:10px">🗂️</div>
+        尚無客戶資料<br>填寫客戶名稱後按「💾 儲存本單」
+      </div>
+      <div id="customerDbList" style="display:none;max-height:320px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+
+  <!-- REVENUE CHART MODAL -->
+  <div id="revenueChartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10003;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border:2px solid #4ade80;border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+      <!-- Header -->
+      <div style="background:var(--surface2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-weight:700;font-size:1rem" id="chartModalTitle">📈 營業額圖表</span>
+        <button onclick="document.getElementById('revenueChartModal').style.display='none'" style="
+          padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;">✕ 關閉</button>
+      </div>
+      <!-- Mode buttons -->
+      <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+        <button id="chartBtnDaily" onclick="callCurrentChart('daily')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每天</button>
+        <button id="chartBtnWeekly" onclick="callCurrentChart('weekly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid #4ade80;
+          background:rgba(74,222,128,0.15);color:#4ade80;font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每週</button>
+        <button id="chartBtnMonthly" onclick="callCurrentChart('monthly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每月</button>
+        <button id="chartBtnYearly" onclick="callCurrentChart('yearly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每年</button>
+      </div>
+      <!-- Chart area -->
+      <div style="padding:16px;overflow-y:auto;flex:1">
+        <canvas id="revenueCanvas" style="width:100%;max-height:380px"></canvas>
+        <div id="chartNoData" style="display:none;text-align:center;padding:40px;color:var(--muted)">尚無資料</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DELETE MODAL -->
+  <div id="confirmDeleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border:2px solid #fb7185;border-radius:14px;width:100%;max-width:320px;overflow:hidden">
+      <div style="background:rgba(251,113,133,0.1);padding:20px 20px 8px;text-align:center">
+        <div style="font-size:2rem;margin-bottom:8px">🗑️</div>
+        <div style="font-weight:700;color:var(--text);font-size:1rem">確定要刪除嗎？</div>
+        <div style="color:var(--muted);font-size:0.82rem;margin-top:6px" id="confirmDeleteMsg">此操作無法復原</div>
+      </div>
+      <div style="display:flex;gap:0;border-top:1px solid var(--border)">
+        <button onclick="confirmDeleteYes()" style="
+          flex:1;padding:14px;border:none;border-right:1px solid var(--border);
+          background:rgba(251,113,133,0.15);color:#fb7185;font-size:0.9rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.15s;"
+          onmouseover="this.style.background='rgba(251,113,133,0.3)'"
+          onmouseout="this.style.background='rgba(251,113,133,0.15)'">✔ 是，刪除</button>
+        <button onclick="confirmDeleteNo()" style="
+          flex:1;padding:14px;border:none;
+          background:var(--surface2);color:var(--text);font-size:0.9rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.15s;"
+          onmouseover="this.style.background='var(--border)'"
+          onmouseout="this.style.background='var(--surface2)'">✕ 否，返回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER VIEW MODAL -->
+  <div id="customerViewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:14px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+      
+      <!-- Modal Header -->
+      <div style="background:var(--surface2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:var(--accent)" id="viewModalName">客戶名稱</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">
+            <span id="viewModalDate"></span>
+            <span style="margin:0 6px">・</span>
+            <span id="viewModalStats"></span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('customerViewModal').style.display='none'" style="
+          padding:5px 12px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;cursor:pointer;
+          font-family:'Noto Sans TC',sans-serif;">✕ 關閉</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding:16px 18px;flex:1;overflow-y:auto">
+        <!-- 匯出文字預覽 -->
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">匯出文字</div>
+        <div id="viewModalExport" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:8px;
+          padding:12px;font-family:'Space Mono',monospace;font-size:0.78rem;
+          color:var(--text);white-space:pre-wrap;line-height:1.75;
+          max-height:300px;overflow-y:auto;margin-bottom:16px"></div>
+
+        <!-- 預留金餘額 -->
+        <div id="viewCreditBlock" style="display:none;background:rgba(96,165,250,0.08);border:1px solid #60a5fa;border-radius:8px;padding:10px 14px;margin-bottom:6px;flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:0.72rem;color:#60a5fa;margin-bottom:2px">💰 預留金餘額</div>
+            <div id="viewCreditAmount" style="font-size:1.1rem;font-weight:700;color:#60a5fa;font-family:'Space Mono',monospace">$0</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="editCreditFromView()" style="
+              padding:4px 10px;border-radius:6px;border:1px solid #60a5fa;
+              background:transparent;color:#60a5fa;font-size:0.75rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">✏️ 變更餘額</button>
+            <button onclick="clearCreditFromView()" style="
+              padding:4px 10px;border-radius:6px;border:1px solid #fb7185;
+              background:transparent;color:#fb7185;font-size:0.75rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">清除</button>
+          </div>
+        </div>
+        <!-- Credit edit row -->
+        <div id="creditEditRow" style="display:none;gap:8px;align-items:center;margin-bottom:10px;background:rgba(96,165,250,0.06);border:1px solid #60a5fa;border-radius:8px;padding:10px 14px">
+          <span style="font-size:0.82rem;color:#60a5fa;white-space:nowrap">變更為：</span>
+          <input id="creditEditInput" type="text" inputmode="numeric" placeholder="輸入新金額" style="
+            flex:1;width:120px;background:var(--bg);border:1px solid #60a5fa;border-radius:6px;
+            color:#60a5fa;font-size:1rem;font-weight:700;padding:6px 10px;outline:none;
+            font-family:'Space Mono',monospace;"
+            onkeydown="if(event.key==='Enter') saveCreditEdit()">
+          <button onclick="saveCreditEdit()" style="
+            padding:6px 14px;border-radius:6px;border:1px solid #4ade80;
+            background:rgba(74,222,128,0.15);color:#4ade80;font-size:0.82rem;font-weight:700;cursor:pointer;
+            font-family:'Noto Sans TC',sans-serif;">✔ 確認</button>
+          <button onclick="cancelCreditEdit()" style="
+            padding:6px 10px;border-radius:6px;border:1px solid var(--border);
+            background:transparent;color:var(--muted);font-size:0.82rem;cursor:pointer;">✕</button>
+        </div>
+        <!-- 客戶資料 -->
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">客戶資料</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap;width:48px">📞 電話</span>
+            <input id="viewModalPhone" placeholder="輸入電話..." style="
+              flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+              color:var(--text);font-size:0.85rem;padding:7px 10px;outline:none;
+              font-family:'Noto Sans TC',sans-serif;"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border)'">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap;width:48px">📍 地址</span>
+            <input id="viewModalAddress" placeholder="輸入住址或超商店名..." style="
+              flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+              color:var(--text);font-size:0.85rem;padding:7px 10px;outline:none;
+              font-family:'Noto Sans TC',sans-serif;"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border)'">
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="background:var(--surface2);padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <input type="hidden" id="viewModalId">
+        <button onclick="saveCustomerInfo()" class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;color:#39ff14;border-color:#39ff14">💾 儲存資料</button>
+        <button onclick="copyViewExport()" class="btn-secondary" style="padding:6px 14px;font-size:0.82rem">📋 複製文字</button>
+        <button onclick="confirmDeleteFromView()" style="
+          padding:6px 14px;border-radius:8px;border:1px solid #fb7185;
+          background:transparent;color:#fb7185;font-size:0.82rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🗑️ 刪除</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- STATISTICS PANEL -->
+  <div class="panel full">
+    <div class="panel-header">
+      <div class="panel-title"><span class="dot" style="background:#34d399;box-shadow:0 0 8px #34d399"></span><span style="color:#34d399">📊 統計表</span></div>
+      <button class="btn-secondary" style="padding:5px 12px;font-size:0.78rem;color:#34d399;border-color:#34d399" onclick="refreshStats()">重新整理</button>
+    </div>
+    <div class="panel-body" id="statsPanel">
+      <div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:0.88rem">
+        <div style="font-size:2.5rem;margin-bottom:10px">📊</div>
+        資料庫有資料後會自動顯示統計
+      </div>
+    </div>
+
+    <!-- 統計詳細區塊 -->
+    <div id="statsContent" style="display:none">
+
+      <!-- 總覽 -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:14px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總客戶數</div>
+          <div id="statTotalCustomers" style="font-size:1.6rem;font-weight:900;color:#60a5fa;font-family:'Space Mono',monospace">0</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總訂單數</div>
+          <div id="statTotalOrders" style="font-size:1.6rem;font-weight:900;color:#a78bfa;font-family:'Space Mono',monospace">0</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總件數</div>
+          <div id="statTotalQty" style="font-size:1.6rem;font-weight:900;color:#f472b6;font-family:'Space Mono',monospace">0</div>
+        </div>
+        <div onclick="openAvgChart()" style="background:var(--surface2);border:1px solid #fb923c;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all 0.15s;box-shadow:0 0 10px rgba(251,146,60,0.15)"
+          onmouseover="this.style.background='rgba(251,146,60,0.08)'" onmouseout="this.style.background='var(--surface2)'">
+          <div style="font-size:0.72rem;color:#fb923c;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">平均單件金額 📊</div>
+          <div id="statAvgPrice" style="font-size:1.6rem;font-weight:900;color:#fb923c;font-family:'Space Mono',monospace">$0</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">點擊查看圖表</div>
+        </div>
+        <div onclick="openRevenueChart()" style="background:var(--surface2);border:1px solid #4ade80;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all 0.15s;box-shadow:0 0 10px rgba(74,222,128,0.15)"
+          onmouseover="this.style.background='rgba(74,222,128,0.08)'" onmouseout="this.style.background='var(--surface2)'">
+          <div style="font-size:0.72rem;color:#4ade80;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總營業額 📈</div>
+          <div id="statTotalRevenue" style="font-size:1.6rem;font-weight:900;color:#4ade80;font-family:'Space Mono',monospace">$0</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">點擊查看圖表</div>
+        </div>
+      </div>
+
+      <!-- 週/月/年 切換 + 篩選 -->
+      <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="btnWeekly" onclick="showPeriod('weekly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid #f59e0b;
+          background:rgba(245,158,11,0.15);color:#f59e0b;font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每週營業額</button>
+        <button id="btnMonthly" onclick="showPeriod('monthly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每月營業額</button>
+        <button id="btnYearly" onclick="showPeriod('yearly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每年營業額</button>
+      </div>
+
+      <!-- 篩選列 -->
+      <div style="padding:0 14px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color:var(--muted)">篩選年份：</span>
+        <select id="filterYear" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;cursor:pointer;">
+          <option value="">全部</option>
+        </select>
+        <span style="font-size:0.78rem;color:var(--muted);margin-left:8px">日期範圍：</span>
+        <input type="date" id="dateFrom" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;">
+        <span style="font-size:0.78rem;color:var(--muted)">至</span>
+        <input type="date" id="dateTo" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;">
+        <button onclick="clearDateFilter()" style="
+          padding:5px 10px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;
+          font-family:'Noto Sans TC',sans-serif;">清除</button>
+      </div>
+      <div id="periodTable" style="padding:0 14px 14px;overflow-x:auto"></div>
+
+      <!-- 排行榜 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 14px">
+        <!-- 訂單排行 -->
+        <div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;font-weight:700">🏆 訂單數排行 Top 30</div>
+          <div id="rankByOrders" style="max-height:320px;overflow-y:auto"></div>
+        </div>
+        <!-- 金額排行 -->
+        <div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;font-weight:700">💰 消費金額排行 Top 30</div>
+          <div id="rankByAmount" style="max-height:320px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- CATEGORY MANAGE MODAL -->
+  <div id="catManageModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10002;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border:2px solid var(--accent);border-radius:14px;width:100%;max-width:340px;overflow:hidden">
+      <div style="background:var(--surface2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;color:var(--accent)" id="catManageTitle">品項管理</span>
+        <button onclick="document.getElementById('catManageModal').style.display='none'" style="
+          padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:16px;max-height:360px;overflow-y:auto" id="catManageBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Order Data ──────────────────────────────────────────────
+let orders = [];
+let nextId = 1;
+
+// ── Parser ──────────────────────────────────────────────────
+function parseText() {
+  const raw = document.getElementById('inputText').value.trim();
+  if (!raw) return;
+
+  const lines = raw.split('\n').filter(l => l.trim());
+  const parsed = [];
+  const skipPat = /^(合計|共計|總計|小計|total|subtotal)/i;
+
+  for (const line of lines) {
+    const clean = line.trim();
+    if (!clean || skipPat.test(clean)) continue;
+
+    // 去掉金額符號，tab 換空格
+    const normalized = clean
+      .replace(/\t/g, ' ')
+      .replace(/[$＄]|NT\$|NT/g, '')
+      .trim();
+
+    // 從行尾往回抓：品項名稱 空格 數量 空格 單項金額
+    // 規則：最後兩段用空格隔開的純數字 = 數量、單項金額；前面全是品項名稱
+    // 判斷預購類型
+    const isPreorderArrived = /^預購到貨/.test(normalized); // 計算件數、不計算金額
+    const isPreorder = !isPreorderArrived && /^預購/.test(normalized); // 不計算件數、計算金額
+
+    // 預購到貨：只需 品項 數量，不需金額
+    if (isPreorderArrived) {
+      const ma = normalized.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
+      if (ma) {
+        parsed.push({
+          id: nextId++,
+          name: ma[1].trim(),
+          qty: parseFloat(ma[2]) || 1,
+          price: 0,
+          source: 'parsed',
+          noQty: false,
+          noPrice: true
+        });
+      }
+      continue;
+    }
+
+    // 一般 / 預購：品項 數量 金額
+    const m = normalized.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*$/);
+    if (m) {
+      const name  = m[1].trim();
+      const qty   = parseFloat(m[2]);
+      const price = parseFloat(m[3]);
+      if (!name) continue;
+      parsed.push({
+        id: nextId++,
+        name,
+        qty: qty > 0 ? qty : 1,
+        price: Math.round(price * 100) / 100,
+        source: 'parsed',
+        noQty: isPreorder,
+        noPrice: false
+      });
+      continue;
+    }
+
+    // 備用：只有一個尾數（品項名稱 單項金額），數量預設1
+    const m2 = normalized.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
+    if (m2) {
+      const name  = m2[1].trim();
+      const price = parseFloat(m2[2]);
+      if (!name) continue;
+      parsed.push({
+        id: nextId++,
+        name,
+        qty: 1,
+        price: Math.round(price * 100) / 100,
+        source: 'parsed',
+        noQty: isPreorder,
+        noPrice: false
+      });
+    }
+  }
+
+  if (parsed.length === 0) {
+    alert('⚠️ 無法解析出訂單資料。\n\n請使用格式（每行一筆）：\n品項名稱 數量 單項金額\n\n例如：\n格紋短袖上衣 2 350\n預購 格紋上衣 2 350\n預購到貨 花漾洋裝 3');
+    return;
+  }
+
+  orders = orders.concat(parsed);
+  renderTable();
+}
+
+// ── Render ──────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('orderBody');
+  if (orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">👗👕👖👒🧦</div>尚無訂單資料<br>請貼上留言後按「解析訂單」</div></td></tr>';
+    document.getElementById('summaryBar').style.display = 'none';
+    document.getElementById('exportBox').textContent = '（按「複製清單」或解析訂單後自動產生）';
+    return;
+  }
+
+  tbody.innerHTML = orders.map((o, i) => `
+    <tr style="${o.outOfStock?'opacity:0.5;text-decoration:line-through':''}">
+      <td style="color:var(--muted);font-size:0.78rem;font-family:'Space Mono',monospace">${i+1}</td>
+      <td><input class="edit-input" value="${esc(o.name)}" onchange="updateField(${o.id},'name',this.value)" placeholder="品項名稱"></td>
+      <td><input class="edit-input num" type="number" value="${o.qty}" min="0" step="1" onchange="updateField(${o.id},'qty',this.value)" style="width:70px"></td>
+      <td><input class="edit-input num" type="text" inputmode="numeric" value="${o.price}" onchange="updateField(${o.id},'price',this.value)" style="width:85px;-moz-appearance:textfield"></td>
+      <td style="text-align:right;font-family:'Space Mono',monospace;font-weight:700;color:${o.noPrice||o.outOfStock?'var(--muted)':'var(--accent)'}">
+        ${o.noPrice||o.outOfStock ? '－' : '$'+(o.qty * o.price).toFixed(0)}
+      </td>
+      <td><input class="edit-input" value="${esc(o.note||'')}" onchange="updateField(${o.id},'note',this.value)" placeholder="尺寸/顏色/備註..." style="font-size:0.8rem;color:var(--muted)"></td>
+      <td style="text-align:center">
+        <span class="tag ${o.outOfStock?'tag-oos':o.noPrice?'tag-preorder-arr':o.noQty?'tag-preorder':o.source==='parsed'?'tag-parsed':'tag-manual'}">${o.outOfStock?'缺貨':o.noPrice?'預購到貨':o.noQty?'預購':o.source==='parsed'?'解析':'手動'}</span>
+      </td>
+      <td style="text-align:center">
+        <button onclick="toggleOutOfStock(${o.id})" style="
+          padding:3px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+          border:1px solid ${o.outOfStock?'#fb7185':'var(--border)'};
+          background:${o.outOfStock?'rgba(251,113,133,0.2)':'transparent'};
+          color:${o.outOfStock?'#fb7185':'var(--muted)'};
+          font-family:'Noto Sans TC',sans-serif;">
+          ${o.outOfStock?'✔缺':'缺貨'}
+        </button>
+      </td>
+      <td style="text-align:center">
+        <button class="btn-danger" onclick="removeRow(${o.id})">✕</button>
+      </td>
+    </tr>
+  `).join('');
+
+  updateSummary();
+  generateExport();
+}
+
+function esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function updateField(id, field, val) {
+  const o = orders.find(o => o.id === id);
+  if (!o) return;
+  if (field === 'name') o.name = val;
+  else if (field === 'qty') o.qty = parseFloat(val) || 0;
+  else if (field === 'price') o.price = parseFloat(val) || 0;
+  else if (field === 'note') o.note = val;
+  updateSummary();
+  generateExport();
+  // re-render subtotals only
+  renderTable();
+}
+
+function removeRow(id) {
+  orders = orders.filter(o => o.id !== id);
+  renderTable();
+}
+
+function toggleOutOfStock(id) {
+  const o = orders.find(o => o.id === id);
+  if (!o) return;
+  o.outOfStock = !o.outOfStock;
+  renderTable();
+}
+
+function clearTable() {
+  if (orders.length === 0 && mergeTotal === 0 && reserveTotal === 0) return;
+  if (!confirm('確定要清空所有訂單資料嗎？\n（合併單、預留金也會一併清除）')) return;
+  orders = [];
+  mergeTotal = 0;
+  mergeQtyTotal = 0;
+  reserveTotal = 0;
+  // Reset merge UI
+  document.getElementById('mergeAmount').value = '';
+  document.getElementById('mergeQty').value = '';
+  document.getElementById('reserveAmount').value = '';
+  document.getElementById('manualMergeAmount').value = '';
+  document.getElementById('manualMergeQty').value = '';
+  manualMergeTotal = 0; manualMergeQtyTotal = 0;
+  document.getElementById('mergeStatBlock').style.display = 'none';
+  document.getElementById('totalQtyAllBlock').style.display = 'none';
+  document.getElementById('summaryBar').style.display = 'none';
+  renderTable();
+  generateExport();
+}
+
+function updateSummary() {
+  const totalItems = orders.length;
+  const totalQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+  const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + (o.qty * o.price), 0));
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal;
+  document.getElementById('totalItems').textContent = totalItems;
+  document.getElementById('totalQty').textContent = totalQty % 1 === 0 ? totalQty : totalQty.toFixed(1);
+  document.getElementById('currentAmount').textContent = '$' + ordersAmount;
+  document.getElementById('totalAmount').textContent = '$' + totalAmount;
+  document.getElementById('amt60').textContent = '$' + (totalAmount + 60 * shipCount60);
+  document.getElementById('amt80').textContent = '$' + (totalAmount + 80 * shipCount80);
+  document.getElementById('summaryBar').style.display = 'block';
+  // Show manual merge in summary if set
+  const manualMergeBlock = document.getElementById('mergeStatBlock');
+  if (manualMergeBlock && manualMergeTotal > 0 && mergeTotal === 0) {
+    manualMergeBlock.style.display = 'block';
+    document.getElementById('mergeAmountDisplay').textContent = '$' + manualMergeTotal;
+    if (manualMergeQtyTotal > 0) {
+      document.getElementById('mergeQtyBlock').style.display = 'flex';
+      document.getElementById('mergeQtyDisplay').textContent = manualMergeQtyTotal + ' 件';
+      const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+      document.getElementById('totalQtyAllBlock').style.display = 'flex';
+      document.getElementById('totalQtyAllDisplay').textContent = (curQty + manualMergeQtyTotal) + ' 件';
+    }
+  } else if (manualMergeBlock && manualMergeTotal === 0 && mergeTotal === 0) {
+    manualMergeBlock.style.display = 'none';
+  }
+  const reserveBlock = document.getElementById('reserveStatBlock');
+  if (reserveBlock) {
+    if (reserveTotal > 0) {
+      reserveBlock.style.display = 'block';
+      document.getElementById('reserveDisplay').textContent = '-$' + reserveTotal;
+    } else {
+      reserveBlock.style.display = 'none';
+    }
+  }
+  const badge = document.getElementById('reserveBadge');
+  if (badge) {
+    const parts = [];
+    if (reserveTotal > 0) parts.push('預留金 -$' + reserveTotal);
+    if (parts.length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = parts.join('  ');
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// ── Add Row ──────────────────────────────────────────────────
+let mergeTotal = 0;
+let manualMergeTotal = 0;  // 手動輸入的上期併單金額
+let manualMergeQtyTotal = 0;  // 手動輸入的上期併單件數
+
+let mergeQtyTotal = 0;
+let reserveTotal = 0;
+
+
+function addMergeAmount() {
+  const val = parseFloat(document.getElementById('mergeAmount').value) || 0;
+  const qty = parseFloat(document.getElementById('mergeQty').value) || 0;
+  if (val <= 0) { document.getElementById('mergeAmount').focus(); return; }
+  mergeTotal += val;
+  mergeQtyTotal += qty;
+  document.getElementById('mergeAmount').value = '';
+  document.getElementById('mergeQty').value = '';
+  document.getElementById('mergeStatBlock').style.display = 'block';
+  document.getElementById('mergeAmountDisplay').textContent = '$' + mergeTotal;
+  if (mergeQtyTotal > 0) {
+    document.getElementById('mergeQtyBlock').style.display = 'flex';
+    document.getElementById('mergeQtyDisplay').textContent = mergeQtyTotal + ' 件';
+    const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+    document.getElementById('totalQtyAllBlock').style.display = 'flex';
+    document.getElementById('totalQtyAllDisplay').textContent = (curQty + mergeQtyTotal + manualMergeQtyTotal) + ' 件';
+  }
+  updateSummary();
+  generateExport();
+  document.getElementById('mergeAmount').focus();
+}
+
+function addRow() {
+  // kept for compatibility
+}
+
+function applyReserve() {
+  reserveTotal = parseFloat(document.getElementById('reserveAmount').value) || 0;
+  updateSummary();
+  generateExport();
+}
+
+
+function applyManualMerge() {
+  manualMergeTotal = parseFloat(document.getElementById('manualMergeAmount').value) || 0;
+  manualMergeQtyTotal = parseFloat(document.getElementById('manualMergeQty').value) || 0;
+  updateSummary();
+  generateExport();
+  // Update 這周件數 display
+  const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+  const totalMergeQty = mergeQtyTotal + manualMergeQtyTotal;
+  if (totalMergeQty > 0) {
+    document.getElementById('totalQtyAllBlock').style.display = 'flex';
+    document.getElementById('totalQtyAllDisplay').textContent = (curQty + totalMergeQty) + ' 件';
+  } else {
+    document.getElementById('totalQtyAllBlock').style.display = 'none';
+  }
+  // Update mergeStatBlock for manual merge
+  if (manualMergeTotal > 0 && mergeTotal === 0) {
+    document.getElementById('mergeStatBlock').style.display = 'block';
+    document.getElementById('mergeAmountDisplay').textContent = '$' + manualMergeTotal;
+    if (manualMergeQtyTotal > 0) {
+      document.getElementById('mergeQtyBlock').style.display = 'flex';
+      document.getElementById('mergeQtyDisplay').textContent = manualMergeQtyTotal + ' 件';
+    }
+  } else if (manualMergeTotal === 0 && mergeTotal === 0) {
+    document.getElementById('mergeStatBlock').style.display = 'none';
+  }
+}
+
+// ── Shipping Mode ────────────────────────────────────────────
+let shippingMode = ''; // '' = none, '超商' = +60, '郵局' = +80
+let customerType = 'old'; // 'old' = 舊客人, 'new' = 新客人
+
+function setCustomerType(type) {
+  customerType = type;
+  const btnOld = document.getElementById('btnOldCustomer');
+  const btnNew = document.getElementById('btnNewCustomer');
+  if (type === 'old') {
+    btnOld.style.background = 'rgba(74,222,128,0.15)'; btnOld.classList.add('active-profile');
+    btnNew.style.background = 'transparent'; btnNew.classList.remove('active-profile');
+    // 舊客人：自動顯示搜尋下拉
+    const val = document.getElementById('customerNameInput').value.trim();
+    onCustomerNameInput(val);
+    document.getElementById('customerNameInput').focus();
+  } else {
+    btnNew.style.background = 'rgba(244,114,182,0.15)'; btnNew.classList.add('active-profile');
+    btnOld.style.background = 'transparent'; btnOld.classList.remove('active-profile');
+    hideCustomerDropdown();
+  }
+  generateExport();
+}
+
+function onCustomerNameInput(val) {
+  updateOrderCustomerTag(val);
+  if (customerType !== 'old') { hideCustomerDropdown(); return; }
+  const dropdown = document.getElementById('customerDropdown');
+  // 取得所有不重複客戶名稱
+  const allNames = [...new Set(customerDb.map(r => r.name))];
+  const matched = val.trim() === '' ? allNames : allNames.filter(n => n.includes(val.trim()));
+  if (matched.length === 0) { hideCustomerDropdown(); return; }
+  dropdown.innerHTML = matched.map(n => `
+    <div onclick="selectCustomerName('${n.replace(/'/g,"\\'")}')" style="
+      padding:9px 14px;cursor:pointer;font-size:0.87rem;color:var(--text);
+      border-bottom:1px solid var(--border);transition:background 0.1s;"
+      onmouseover="this.style.background='rgba(245,197,66,0.1)'"
+      onmouseout="this.style.background='transparent'">
+      👤 ${n}
+    </div>
+  `).join('');
+  dropdown.style.display = 'block';
+}
+
+function onCustomerNameKey(e) {
+  if (e.key === 'Escape') hideCustomerDropdown();
+  if (e.key === 'Enter') hideCustomerDropdown();
+}
+
+function selectCustomerName(name) {
+  document.getElementById('customerNameInput').value = name;
+  updateOrderCustomerTag(name);
+  hideCustomerDropdown();
+  generateExport();
+}
+
+function hideCustomerDropdown() {
+  const d = document.getElementById('customerDropdown');
+  if (d) d.style.display = 'none';
+}
+
+function updateOrderCustomerTag(name) {
+  const tag = document.getElementById('orderCustomerTag');
+  if (!tag) return;
+  if (name && name.trim()) {
+    tag.style.display = 'inline-block';
+    tag.textContent = '👤 ' + name.trim();
+  } else {
+    tag.style.display = 'none';
+  }
+  // Check for unsettled orders
+  checkUnsettledForCustomer(name);
+}
+
+let pendingMergeRecords = [];
+
+// ── Credit Balance (預留金餘額) ───────────────────────────────
+function getCreditKey(name) { return 'credit_' + name.trim(); }
+
+function saveCreditBalance(name, amount) {
+  // 直接覆蓋，不累加（避免重複儲存時疊加）
+  localStorage.setItem(getCreditKey(name), amount);
+}
+
+function getCreditBalance(name) {
+  return parseFloat(localStorage.getItem(getCreditKey(name)) || '0');
+}
+
+function clearCreditBalance(name) {
+  localStorage.removeItem(getCreditKey(name));
+}
+
+function useCreditBalance(name, amount) {
+  const existing = getCreditBalance(name);
+  const remaining = existing - amount;
+  if (remaining <= 0) {
+    clearCreditBalance(name);
+  } else {
+    localStorage.setItem(getCreditKey(name), remaining);
+  }
+  return Math.max(0, existing - amount); // return remaining
+}
+let pendingMergedIds = []; // 等儲存時才正式標記被合併的舊單
+
+function checkUnsettledForCustomer(name) {
+  const alert = document.getElementById('unsettledAlert');
+  const listEl = document.getElementById('unsettledList');
+  if (!alert || !listEl) return;
+  if (!name || !name.trim()) { alert.style.display = 'none'; return; }
+
+  const db = window.customerDb || [];
+  const unsettled = db.filter(r => r.name === name.trim() && !r.settled && !r.mergedInto && (r.totalAmount||0) > 0 && !r.isCreditOrder);
+  pendingMergeRecords = unsettled;
+
+  // 檢查預留金餘額
+  const creditBal = getCreditBalance(name.trim());
+  const creditAlertEl = document.getElementById('creditBalanceAlert');
+  if (creditBal > 0 && creditAlertEl) {
+    creditAlertEl.style.display = 'flex';
+    document.getElementById('creditBalanceText').textContent = `此客戶有預留金餘額 $${creditBal}`;
+    document.getElementById('creditBalanceBtn').onclick = () => applyCreditBalance(creditBal);
+  } else if (creditAlertEl) {
+    creditAlertEl.style.display = 'none';
+  }
+
+  if (unsettled.length === 0) { alert.style.display = 'none'; return; }
+
+  const totalAmt = unsettled.reduce((s, r) => s + (r.totalAmount || 0), 0);
+  // 件數：自身件數 + 儲存時記錄的上期件數（mergeQtyTotal）
+  // 不用遞迴，因為 mergeQtyTotal 已經包含所有被合併進來的件數
+  const totalQtyVal = unsettled.reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0), 0);
+
+  // Show detail for each unsettled order
+  const detailHtml = unsettled.map(r => {
+    const items = (r.orders || []).filter(o => !o.outOfStock && !o.noPrice)
+      .map(o => `${o.name} ×${o.qty} $${o.price}`).join('、');
+    return `<div style="background:rgba(251,113,133,0.1);border-radius:6px;padding:6px 10px;margin-bottom:4px">
+      <span style="color:#fb7185;font-size:0.78rem;font-weight:700">${r.date} ・ $${r.totalAmount}</span>
+      ${items ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${items}</div>` : ''}
+    </div>`;
+  }).join('');
+  listEl.innerHTML = detailHtml + `<div style="color:#fb7185;font-weight:700;font-size:0.82rem;margin-top:4px">合計 $${totalAmt} / ${totalQtyVal}件</div>`;
+
+  alert.style.display = 'flex';
+}
+
+function getTotalQtyDeep(record, db) {
+  // 計算一筆訂單的完整件數（含所有已被合併進來的舊單件數）
+  let qty = (record.totalQty || 0);
+  // 加上此訂單記錄的 mergeQtyTotal（儲存時記錄的上期件數）
+  qty += (record.mergeQtyTotal || 0);
+  // 追溯：找到被合併進這筆的舊單，遞迴加總
+  const mergedIds = record.mergedFromIds || [];
+  mergedIds.forEach(oldId => {
+    const old = db.find(r => Number(r.id) === Number(oldId));
+    if (old) qty += getTotalQtyDeep(old, db);
+  });
+  return qty;
+}
+
+function mergeUnsettled() {
+  if (pendingMergeRecords.length === 0) return;
+  const totalAmt = pendingMergeRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
+  // 件數：自身件數 + 已記錄的上期件數，不遞迴（避免重複計算）
+  const totalQtyVal = pendingMergeRecords.reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0), 0);
+
+  // 先重置，避免累加舊值
+  mergeTotal = 0;
+  mergeQtyTotal = 0;
+
+  // Fill merge fields
+  document.getElementById('mergeAmount').value = totalAmt;
+  document.getElementById('mergeQty').value = totalQtyVal;
+  addMergeAmount();
+
+  // 記錄被合併的舊單 ID，等儲存時再正式標記
+  pendingMergedIds = pendingMergeRecords.map(r => r.id);
+
+  // Hide alert
+  document.getElementById('unsettledAlert').style.display = 'none';
+  pendingMergeRecords = [];
+}
+
+function dismissUnsettled() {
+  document.getElementById('unsettledAlert').style.display = 'none';
+}
+
+function applyCreditBalance(amount) {
+  document.getElementById('reserveAmount').value = amount;
+  reserveTotal = amount;
+  updateSummary();
+  generateExport();
+  document.getElementById('creditBalanceAlert').style.display = 'none';
+}
+
+function ignoreCreditBalance() {
+  document.getElementById('creditBalanceAlert').style.display = 'none';
+}
+let freeShipping = false; // 免運模式
+let shipCount60 = 1;
+let shipCount80 = 1;
+
+function setFreeShipping(type) {
+  // 切換到該運送方式並啟用免運
+  if (shippingMode === type && freeShipping) {
+    // 再點一次取消免運
+    freeShipping = false;
+  } else {
+    shippingMode = type;
+    freeShipping = true;
+    // 取消另一個選擇按鈕的active狀態
+    const btn60 = document.getElementById('btnShip60');
+    const btn80 = document.getElementById('btnShip80');
+    btn60.style.background = 'transparent'; btn60.style.color = '#fb923c'; btn60.textContent = '選擇';
+    btn80.style.background = 'transparent'; btn80.style.color = '#a78bfa'; btn80.textContent = '選擇';
+  }
+  updateFreeShippingBtns();
+  generateExport();
+}
+
+function updateFreeShippingBtns() {
+  const btn60 = document.getElementById('btnFree60');
+  const btn80 = document.getElementById('btnFree80');
+  if (shippingMode === '超商' && freeShipping) {
+    btn60.style.background = '#39ff14'; btn60.style.color = '#111'; btn60.textContent = '✔ 免運';
+    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '免運';
+  } else if (shippingMode === '郵局' && freeShipping) {
+    btn80.style.background = '#39ff14'; btn80.style.color = '#111'; btn80.textContent = '✔ 免運';
+    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '免運';
+  } else {
+    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '免運';
+    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '免運';
+  }
+}
+
+function changeShipCount(type, delta) {
+  if (type === '超商') {
+    shipCount60 = Math.min(10, Math.max(1, shipCount60 + delta));
+    document.getElementById('shipCount60').textContent = shipCount60;
+  } else {
+    shipCount80 = Math.min(10, Math.max(1, shipCount80 + delta));
+    document.getElementById('shipCount80').textContent = shipCount80;
+  }
+  updateSummary();
+  generateExport();
+}
+
+function setShipping(mode) {
+  freeShipping = false;
+  updateFreeShippingBtns();
+  if (shippingMode === mode) {
+    shippingMode = ''; // 再點一次取消
+  } else {
+    shippingMode = mode;
+  }
+  // Update button styles
+  const btn60 = document.getElementById('btnShip60');
+  const btn80 = document.getElementById('btnShip80');
+  if (shippingMode === '超商') {
+    btn60.style.background = '#fb923c'; btn60.style.color = '#111'; btn60.textContent = '✔ 已選';
+    btn80.style.background = 'transparent'; btn80.style.color = '#a78bfa'; btn80.textContent = '選擇';
+  } else if (shippingMode === '郵局') {
+    btn80.style.background = '#a78bfa'; btn80.style.color = '#111'; btn80.textContent = '✔ 已選';
+    btn60.style.background = 'transparent'; btn60.style.color = '#fb923c'; btn60.textContent = '選擇';
+  } else {
+    btn60.style.background = 'transparent'; btn60.style.color = '#fb923c'; btn60.textContent = '選擇';
+    btn80.style.background = 'transparent'; btn80.style.color = '#a78bfa'; btn80.textContent = '選擇';
+  }
+  generateExport();
+}
+
+// ── Export ───────────────────────────────────────────────────
+function generateExport() {
+  if (orders.length === 0) { document.getElementById('exportBox').textContent = '（無資料）'; return; }
+
+  const itemLines = orders.map((o, i) => {
+    if (o.outOfStock) return `${o.name} ×${o.qty}（缺貨）`;
+    const sub = Math.round(o.qty * o.price);
+    const noteStr = o.note ? ` 【${o.note}】` : '';
+    return `${o.name} $${o.price} x ${o.qty}件 ＝ $${sub}${noteStr}`;
+  });
+
+  const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty * o.price, 0));
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal;
+  const totalQty    = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+  const amt60       = totalAmount + 60 * shipCount60;
+  const amt80       = totalAmount + 80 * shipCount80;
+  const shipFee60   = 60 * shipCount60;
+  const shipFee80   = 80 * shipCount80;
+
+  const totalManualMergeQty = manualMergeQtyTotal || 0;
+  const totalQtyAll = (mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQty + mergeQtyTotal + totalManualMergeQty : 0;
+  const mergeLines = mergeTotal > 0 ? [
+    `（前次合併單 $${mergeTotal}）`,
+    mergeQtyTotal > 0 ? `（上期件數 ${mergeQtyTotal} 件）` : '',
+
+  ].filter(Boolean) : [];
+  const text = [
+    '匯款完每週六日一出貨',
+    '匯款完畢才能再次訂購商品',
+    '感謝捧場♥️',
+    '',
+    '每週結單',
+    ...(customerType === 'old' ? [
+      `共 ${(mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQtyAll : totalQty} 件`,
+      `這周新的訂單件數 ${totalQty} 件`,
+      ...(manualMergeTotal > 0 ? [`（前期金額 $${manualMergeTotal}）`] : []),
+      ...(manualMergeQtyTotal > 0 ? [`（前期件數 ${manualMergeQtyTotal} 件）`] : []),
+    ] : []),
+    '',
+    ...itemLines,
+    ...mergeLines,
+    ...(reserveTotal > 0 ? [`（預留金 -$${reserveTotal}）`] : []),
+    '',
+    ...(freeShipping && shippingMode === '超商' ? [`超取免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
+        freeShipping && shippingMode === '郵局' ? [`郵寄免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
+        shippingMode === '超商' ? [`+${shipFee60}超取`, ``, `▶▶ 匯款總金額 ＄${amt60} ◀◀`] :
+        shippingMode === '郵局' ? [`+${shipFee80}郵寄`, ``, `▶▶ 匯款總金額 ＄${amt80} ◀◀`] :
+        [`+${shipFee60}超取`, ``, `▶▶ 匯款總金額 ＄${amt60} ◀◀`, `+${shipFee80}郵寄`, ``, `▶▶ 匯款總金額 ＄${amt80} ◀◀`]),
+    '',
+    '（匯款完如要放貨合併請告知）',
+    '—————————————',
+    profiles[activeProfile].bankName,
+    '帳號' + profiles[activeProfile].accNum,
+    '戶名 ' + profiles[activeProfile].holderName,
+    '—————————————',
+    '匯款完成 『幫我拍匯款明細』',
+    '請記得留下',
+    '收件人',
+    '電話',
+    '收件地址或超商店名',
+    '"如有更改收件資料請主動告知"',
+  ].join('\n');
+
+  document.getElementById('exportBox').textContent = text;
+}
+
+function copyExport() {
+  const box = document.getElementById('exportBox');
+  const text = box.textContent;
+  if (!text || text.startsWith('（')) { alert('請先解析訂單'); return; }
+
+  const btn = document.getElementById('copyExportBtn');
+  const orig = btn.textContent;
+
+  function onSuccess() {
+    btn.textContent = '✅ 已複製！';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1800);
+  }
+
+  // 方法1: 現代 clipboard API
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy());
+  } else {
+    fallbackCopy();
+  }
+
+  function fallbackCopy() {
+    // 方法2: 建立隱藏 textarea 選取後複製
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      const ok = document.execCommand('copy');
+      if (ok) onSuccess();
+      else alert('複製失敗，請手動選取下方文字框內容複製');
+    } catch(e) {
+      alert('複製失敗，請手動選取下方文字框內容複製');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+function copyTable() {
+  copyExport();
+}
+
+function clearInput() {
+  // 直接清除不詢問
+  orders = [];
+  nextId = 1;
+  mergeTotal = 0;
+  mergeQtyTotal = 0;
+  reserveTotal = 0;
+  shippingMode = '';
+  freeShipping = false;
+  shipCount60 = 1;
+  shipCount80 = 1;
+  customerType = 'old';
+
+  // 清除畫面上的輸入框
+  document.getElementById('inputText').value = '';
+  document.getElementById('customerNameInput').value = '';
+  document.getElementById('mergeAmount').value = '';
+  document.getElementById('mergeQty').value = '';
+  document.getElementById('reserveAmount').value = '';
+
+  // 重新渲染
+  renderTable();
+  generateExport();
+  calcClear();
+
+  // 重設按鈕狀態
+  setCustomerType('old');
+  setShipping('');
+}
+
+// ── Calculator ───────────────────────────────────────────────
+let calcExpr = '';
+let calcResult = '0';
+let freshResult = false;
+
+function calcRender() {
+  document.getElementById('calcExpr').textContent = calcExpr;
+  document.getElementById('calcVal').textContent = calcResult;
+}
+
+function calcNum(n) {
+  if (freshResult) { calcExpr = ''; freshResult = false; }
+  calcExpr += n;
+  try { calcResult = String(eval(calcExpr)); } catch(e) { calcResult = calcExpr; }
+  calcRender();
+}
+
+function calcOp(op) {
+  freshResult = false;
+  if (calcExpr === '' && calcResult !== '0') calcExpr = calcResult;
+  const last = calcExpr.slice(-1);
+  if (['+','-','*','/'].includes(last)) calcExpr = calcExpr.slice(0, -1);
+  calcExpr += op;
+  calcResult = op === '+' ? '+' : op === '-' ? '−' : op === '*' ? '×' : '÷';
+  calcRender();
+}
+
+function calcEq() {
+  if (!calcExpr) return;
+  try {
+    const res = eval(calcExpr);
+    calcResult = String(Math.round(res * 10000) / 10000);
+    calcExpr = calcExpr + ' =';
+    freshResult = true;
+  } catch(e) { calcResult = '錯誤'; }
+  calcRender();
+}
+
+function calcClear() { calcExpr = ''; calcResult = '0'; freshResult = false; calcRender(); }
+function calcDel() {
+  if (freshResult) { calcClear(); return; }
+  calcExpr = calcExpr.slice(0, -1);
+  try { calcResult = calcExpr ? String(eval(calcExpr)) : '0'; } catch(e) { calcResult = calcExpr || '0'; }
+  calcRender();
+}
+function calcDot() {
+  const parts = calcExpr.split(/[+\-*/]/);
+  const last = parts[parts.length - 1];
+  if (!last.includes('.')) calcNum('.');
+}
+
+function addCalcToOrder() {
+  const val = parseFloat(calcResult);
+  if (isNaN(val) || val <= 0) { alert('請先用計算機算出一個金額'); return; }
+  document.getElementById('mergeAmount').value = val;
+  document.getElementById('mergeAmount').focus();
+}
+
+// ── Profiles ─────────────────────────────────────────────────
+const defaultProfiles = {
+  '蛇郵局': { bankName: '郵局700', accNum: '02814440162101', holderName: '傅本營' },
+  '蛇富邦': { bankName: '台北富邦中壢分行012-7130', accNum: '00713168368131', holderName: '傅本營' },
+  '兔中信': { bankName: '中國信託822', accNum: '129541695033', holderName: '鄭衣伶' },
+  '亦郵局': { bankName: '郵局700', accNum: '02810013365138', holderName: '傅賢亦' },
+  '亦中信': { bankName: '中國信託822', accNum: '129542092318', holderName: '傅賢亦' },
+};
+
+// 自動偵測舊資料是否相容，不相容就重置
+const savedProfiles = JSON.parse(localStorage.getItem('statuProfiles') || 'null');
+const profileKeys = Object.keys(defaultProfiles);
+const isCompatible = savedProfiles && profileKeys.every(k => k in savedProfiles);
+// 強制用 defaultProfiles 填補空白欄位（確保固定帳號不被舊空白資料覆蓋）
+let profiles = JSON.parse(JSON.stringify(defaultProfiles));
+if (isCompatible) {
+  profileKeys.forEach(k => {
+    // 只保留用戶自行修改過的資料（bankName 有值才用儲存的）
+    if (savedProfiles[k] && savedProfiles[k].bankName && savedProfiles[k].bankName.trim()) {
+      profiles[k] = savedProfiles[k];
+    }
+  });
+}
+// 修正錯別字
+profileKeys.forEach(k => {
+  if (profiles[k] && profiles[k].bankName) {
+    profiles[k].bankName = profiles[k].bankName.replace('中國信托', '中國信託');
+  }
+});
+localStorage.setItem('statuProfiles', JSON.stringify(profiles));
+
+const savedActive = localStorage.getItem('statuActiveProfile');
+let activeProfile = (savedActive && profileKeys.includes(savedActive)) ? savedActive : '蛇郵局';
+let editingProfile = '';
+
+function saveProfilesToStorage() {
+  // 修正錯別字
+profileKeys.forEach(k => {
+  if (profiles[k] && profiles[k].bankName) {
+    profiles[k].bankName = profiles[k].bankName.replace('中國信托', '中國信託');
+  }
+});
+localStorage.setItem('statuProfiles', JSON.stringify(profiles));
+  localStorage.setItem('statuActiveProfile', activeProfile);
+}
+
+function openProfile(name) {
+  editingProfile = name;
+  document.getElementById('modalTitle').textContent = '「' + name + '」帳號設定';
+  document.getElementById('modalBankName').value = profiles[name].bankName;
+  document.getElementById('modalAccNum').value = profiles[name].accNum;
+  document.getElementById('modalHolderName').value = profiles[name].holderName || '';
+  const modal = document.getElementById('profileModal');
+  modal.style.display = 'flex';
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').style.display = 'none';
+}
+
+function saveProfile() {
+  const bankName = document.getElementById('modalBankName').value.trim();
+  const accNum = document.getElementById('modalAccNum').value.trim();
+  const holderName = document.getElementById('modalHolderName').value.trim();
+  profiles[editingProfile] = { bankName, accNum, holderName };
+  // Set as active profile
+  activeProfile = editingProfile;
+  saveProfilesToStorage();
+  updateProfileButtons();
+  closeProfileModal();
+  generateExport();
+}
+
+function updateProfileButtons() {
+  ['蛇郵局','蛇富邦','兔中信','亦郵局','亦中信'].forEach(name => {
+    const btn = document.getElementById('btn_' + name);
+    if (!btn) return;
+    btn.classList.toggle('active-profile', name === activeProfile);
+  });
+}
+
+// Click profile button to switch active (without editing)
+function openProfile(name) {
+  // If already active, open editor; otherwise just switch
+  if (name === activeProfile) {
+    editingProfile = name;
+    document.getElementById('modalTitle').textContent = '「' + name + '」帳號設定';
+    document.getElementById('modalBankName').value = profiles[name].bankName;
+    document.getElementById('modalAccNum').value = profiles[name].accNum;
+    document.getElementById('profileModal').style.display = 'flex';
+  } else {
+    activeProfile = name;
+    saveProfilesToStorage();
+    updateProfileButtons();
+    generateExport();
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('profileModal').addEventListener('click', function(e) {
+  if (e.target === this) closeProfileModal();
+});
+
+window.addEventListener('load', () => {
+  updateProfileButtons();
+});
+
+// ── Customer Database ────────────────────────────────────────
+if (!window.customerDb) window.customerDb = JSON.parse(localStorage.getItem('statuCustomerDb') || '[]');
+Object.defineProperty(window, 'customerDb', { get: function() { return window._customerDb || []; }, set: function(v) { window._customerDb = v; } });
+window._customerDb = JSON.parse(localStorage.getItem('statuCustomerDb') || '[]');
+
+function saveCurrentCustomer() {
+  const name = document.getElementById('customerNameInput').value.trim();
+  if (!name) { alert('請先填寫客戶名稱'); document.getElementById('customerNameInput').focus(); return; }
+  if (orders.length === 0) { alert('尚無訂單資料可儲存'); return; }
+
+  const exportText = document.getElementById('exportBox').textContent;
+
+  // 記錄哪些舊單被合併進來
+  const mergedFromIds = pendingMergedIds.slice();
+
+  const record = {
+    id: Date.now(),
+    name,
+    date: new Date().toLocaleDateString('zh-TW') + ' ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false}),
+    itemCount: orders.length,
+    totalQty: orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty)||0), 0),
+    totalAmount: Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty*o.price, 0)) + mergeTotal - reserveTotal,
+    exportText,
+    orders: JSON.parse(JSON.stringify(orders)),
+    mergedFromIds,  // 記錄合併了哪些舊單
+    hasMerge: mergedFromIds.length > 0,
+    mergeQtyTotal,  // 合併進來的上期件數（自動）
+    manualMergeTotal,  // 手動輸入的上期併單金額
+    manualMergeQtyTotal,  // 手動輸入的上期件數
+  };
+
+  // 儲存到 Firestore（雲端共用）
+  // 偵測負數：計算預留金餘額
+  const finalAmount = record.totalAmount;
+  const creditBalance = finalAmount < 0 ? Math.abs(finalAmount) : 0;
+  if (creditBalance > 0) record.totalAmount = 0; // 負數單金額歸零，餘額另存
+
+  const doSave = () => {
+    if (window.saveToFirestore) {
+      window.saveToFirestore(record).then(() => {
+        mergedFromIds.forEach(oldId => {
+          const old = (window.customerDb||[]).find(r => Number(r.id) === Number(oldId));
+          if (old && !old.mergedInto) {
+            old.mergedInto = true;
+            if (window.updateFirestore && old._docId) {
+              window.updateFirestore(old._docId, { mergedInto: true });
+            }
+          }
+        });
+        // 儲存預留金餘額到客戶專屬記錄
+        if (creditBalance > 0) {
+          saveCreditBalance(name, creditBalance);
+          alert(`✅ 已儲存「${name}」的訂單！\n💰 預留金餘額 $${creditBalance} 已記錄，下次訂單自動提示`);
+        } else {
+          alert(`✅ 已儲存「${name}」的訂單！${mergedFromIds.length > 0 ? '\n已標記 '+mergedFromIds.length+' 筆舊單為「已併入」' : ''}`);
+        }
+        pendingMergedIds = [];
+        location.reload();
+      }).catch(e => {
+        alert('❌ 儲存失敗：' + e.message);
+      });
+    } else {
+      customerDb.unshift(record);
+      mergedFromIds.forEach(oldId => {
+        const old = customerDb.find(r => Number(r.id) === Number(oldId));
+        if (old) old.mergedInto = true;
+      });
+      localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
+      if (creditBalance > 0) saveCreditBalance(name, creditBalance);
+      pendingMergedIds = [];
+      renderCustomerDb();
+      alert(`✅ 已儲存「${name}」的訂單！${creditBalance > 0 ? '\n💰 預留金餘額 $'+creditBalance+' 已記錄' : ''}`);
+    }
+  };
+  doSave();
+}
+
+function renderCustomerDb(filter = '') {
+  const list = document.getElementById('customerDbList');
+  const empty = document.getElementById('customerDbEmpty');
+  const filtered = customerDb.filter(r => r.name.includes(filter));
+
+  if (filtered.length === 0) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  list.style.display = 'block';
+  empty.style.display = 'none';
+
+  // 依名字分組
+  const groups = {};
+  filtered.forEach(r => {
+    if (!groups[r.name]) groups[r.name] = [];
+    groups[r.name].push(r);
+  });
+
+  // 排序：有未結單的優先，然後按最新訂單日期遞減
+  const sortedGroups = Object.entries(groups).sort((a, b) => {
+    const aUnsettled = a[1].some(r => !r.settled);
+    const bUnsettled = b[1].some(r => !r.settled);
+    if (aUnsettled !== bUnsettled) return aUnsettled ? -1 : 1;
+    // 同狀態按最新日期排
+    return b[1][0].date.localeCompare(a[1][0].date);
+  });
+
+  list.innerHTML = sortedGroups.map(([name, records]) => {
+    const totalOrders = records.length;
+    const latestDate = records[0].date;
+    // 已結單：settled=true 且非已併入
+    const settledRecords = records.filter(r => r.settled && !r.mergedInto && !r.isCreditOrder);
+    // 未結金額：只算非已併入的未結單（避免重複計算金額）
+    const unsettledAmtRecords = records.filter(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0);
+    // 未結件數：所有未結的都算（含已併入，件數不重複）
+    const unsettledQtyRecords = records.filter(r => !r.settled);
+
+    const settledAmt = settledRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
+    const unsettledAmt = unsettledAmtRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
+    const settledQty = settledRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
+    const unsettledQty = unsettledQtyRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
+    const hasUnsettled = records.some(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0);
+    const hasCreditOrders = records.some(r => r.settled && r.isCreditOrder);
+    return `
+    <div style="border-bottom:1px solid var(--border)">
+      <!-- 客戶名稱列 -->
+      <div style="padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--surface2);cursor:pointer;border-left:3px solid ${hasUnsettled ? '#fb7185' : hasCreditOrders ? '#60a5fa' : '#f5c542'}"
+           onclick="toggleCustomerGroup('${name.replace(/'/g,"\\'")}')">
+        <div style="flex:1;min-width:120px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-weight:700;color:var(--text);font-size:0.9rem">👤 ${name}</span>
+            ${getCreditBalance(name) > 0 ? `<span style="font-size:0.72rem;padding:1px 7px;border-radius:4px;background:rgba(96,165,250,0.15);color:#60a5fa;font-weight:700">💰 預留 $${getCreditBalance(name)}</span>` : ''}
+            ${hasUnsettled ? '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(251,113,133,0.2);color:#fb7185;font-weight:700">未結單</span>' : '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(245,197,66,0.15);color:#f5c542;font-weight:700">已結單</span>'}
+          </div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:6px">
+            <span>共 ${totalOrders} 筆</span>
+            ${settledAmt > 0 ? `<span style="color:#f5c542">✔ 已結 $${settledAmt} / ${settledQty}件</span>` : ''}
+            ${unsettledAmt > 0 ? `<span style="color:#fb7185">⚠ 未結 $${unsettledAmt} / ${unsettledQty}件</span>` : ''}
+            <span style="color:var(--muted)">・ 最新：${latestDate}</span>
+          </div>
+        </div>
+        <span id="arrow_${name}" style="color:var(--muted);font-size:0.8rem;transition:transform 0.2s">▶</span>
+      </div>
+      <!-- 訂單記錄列表（預設展開） -->
+      <div id="group_${name}" style="display:none">
+        ${records.map(r => `
+        <div style="padding:10px 16px 10px 28px;border-top:1px dashed var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:rgba(0,0,0,0.1)">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:0.78rem;color:var(--muted)">${r.date}${r.settled && r.isCreditOrder ? ' <span style="color:#60a5fa">・預留金單</span>' : r.settled ? ' <span style="color:#f5c542">・已結單</span>' : r.mergedInto ? ' <span style="color:#a78bfa">・已併入新單</span>' : ' <span style="color:#fb7185">・未結單</span>'}</div>
+            <div style="font-size:0.82rem;color:var(--text);margin-top:2px">${r.itemCount}品項 ・ ${r.totalQty}件 ・ <span style="color:var(--accent);font-weight:700">$${r.totalAmount}</span></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="viewCustomerRecord(${r.id})" style="
+              padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;
+              border:1px solid var(--accent);background:transparent;color:var(--accent);
+              font-family:'Noto Sans TC',sans-serif;">查看</button>
+            ${r.mergedInto ? `
+              <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
+                border:1px solid #a78bfa;background:rgba(167,139,250,0.1);color:#a78bfa;
+                font-family:'Noto Sans TC',sans-serif;">🔗 已併入</span>
+            ` : r.settled && r.isCreditOrder ? `
+              <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
+                border:1px solid #60a5fa;background:rgba(96,165,250,0.15);color:#60a5fa;
+                font-family:'Noto Sans TC',sans-serif;">💰 預留金單 $${Math.abs(r.totalAmount||0)}</span>
+            ` : r.settled ? `
+              <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
+                border:1px solid #f5c542;background:rgba(245,197,66,0.15);color:#f5c542;
+                font-family:'Noto Sans TC',sans-serif;">💰 已結單</span>
+            ` : `
+              <button onclick="settleOrder(${r.id})" style="
+                padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;
+                border:1px solid ${(r.totalAmount||0) <= 0 ? '#60a5fa' : '#f59e0b'};
+                background:transparent;color:${(r.totalAmount||0) <= 0 ? '#60a5fa' : '#f59e0b'};
+                font-family:'Noto Sans TC',sans-serif;">${(r.totalAmount||0) <= 0 ? '💰 預留金結單' : '💰 結單'}</button>
+              <button onclick="deleteCustomerRecord(${r.id})" style="
+                padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;
+                border:1px solid #fb7185;background:transparent;color:#fb7185;
+                font-family:'Noto Sans TC',sans-serif;">刪除</button>
+            `}
+          </div>
+        </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+function toggleCustomerGroup(name) {
+  const group = document.getElementById('group_' + name);
+  const arrow = document.getElementById('arrow_' + name);
+  if (!group) return;
+  const isHidden = group.style.display === 'none';
+  group.style.display = isHidden ? 'block' : 'none';
+  arrow.textContent = isHidden ? '▼' : '▶';
+}
+
+function searchCustomers() {
+  const q = document.getElementById('customerSearchInput').value.trim();
+  renderCustomerDb(q);
+}
+
+function viewCustomerRecord(id) {
+  id = Number(id);
+  const r = customerDb.find(r => Number(r.id) === id);
+  if (!r) return;
+  document.getElementById('viewModalName').textContent = r.name;
+  document.getElementById('viewModalDate').textContent = r.date;
+  document.getElementById('viewModalStats').textContent = r.itemCount + ' 品項 ・ ' + r.totalQty + ' 件 ・ $' + r.totalAmount;
+  document.getElementById('viewModalExport').textContent = r.exportText;
+  document.getElementById('viewModalId').value = r.id;
+  document.getElementById('viewModalPhone').value = r.phone || '';
+  document.getElementById('viewModalAddress').value = r.address || '';
+  // Show credit balance
+  const credit = getCreditBalance(r.name);
+  const creditBlock = document.getElementById('viewCreditBlock');
+  if (creditBlock) {
+    if (credit > 0) {
+      creditBlock.style.display = 'flex';
+      document.getElementById('viewCreditAmount').textContent = '$' + credit;
+    } else {
+      creditBlock.style.display = 'none';
+    }
+  }
+  document.getElementById('customerViewModal').style.display = 'flex';
+}
+
+let pendingDeleteId = null;
+let pendingDeleteDocId = null;
+let pendingDeleteSource = ''; // 'list' or 'modal'
+
+function settleOrder(id) {
+  id = Number(id);
+  const r = customerDb.find(r => Number(r.id) === id);
+  if (!r) return;
+  const isCreditOrder = (r.totalAmount || 0) <= 0;
+  const msg = isCreditOrder
+    ? `確定將「${r.name}」這筆預留金單標記為完成？\n餘額將繼續保留供下次抵扣。`
+    : `確定將「${r.name}」這筆訂單標記為「已結單完成匯款」？\n標記後將無法刪除。`;
+  if (!confirm(msg)) return;
+  r.settled = true;
+  if (isCreditOrder) r.isCreditOrder = true;
+  if (window.updateFirestore && r._docId) {
+    window.updateFirestore(r._docId, { settled: true, isCreditOrder: isCreditOrder });
+  } else {
+    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
+  }
+  renderCustomerDb(document.getElementById('customerSearchInput').value.trim());
+  refreshStats();
+}
+
+function deleteCustomerRecord(id) {
+  id = Number(id);
+  const r = customerDb.find(r => Number(r.id) === id);
+  if (!r) return;
+  if (r.settled) { alert('此訂單已結單完成匯款，無法刪除！'); return; }
+  pendingDeleteId = id;
+  pendingDeleteDocId = r._docId || null;
+  pendingDeleteSource = 'list';
+  document.getElementById('confirmDeleteMsg').textContent = `「${r.name}」的訂單記錄將被永久刪除`;
+  document.getElementById('confirmDeleteModal').style.display = 'flex';
+}
+
+window.addEventListener('load', () => { renderCustomerDb(); setTimeout(refreshStats, 500); });
+
+// ── Customer View Modal ──────────────────────────────────────
+function editCreditFromView() {
+  const id = Number(document.getElementById('viewModalId').value);
+  const r = (window.customerDb||[]).find(r => Number(r.id) === id);
+  if (!r) return;
+  const current = getCreditBalance(r.name);
+  // Use a separate edit row
+  const editRow = document.getElementById('creditEditRow');
+  if (editRow) {
+    editRow.style.display = 'flex';
+    document.getElementById('creditEditInput').value = current;
+    document.getElementById('creditEditInput').focus();
+  }
+}
+
+function saveCreditEdit() {
+  try {
+    const input = document.getElementById('creditEditInput');
+    if (!input) { alert('找不到輸入框'); return; }
+    const newAmt = parseFloat(input.value);
+    if (isNaN(newAmt) || newAmt < 0) { alert('請輸入有效的金額'); return; }
+    const id = Number(document.getElementById('viewModalId').value);
+    const db = window.customerDb || window._customerDb || [];
+    const r = db.find(r => Number(r.id) === id);
+    if (!r) { alert('找不到客戶資料，id=' + id); return; }
+    localStorage.setItem(getCreditKey(r.name), newAmt);
+    document.getElementById('creditEditRow').style.display = 'none';
+    if (newAmt > 0) {
+      document.getElementById('viewCreditAmount').textContent = '$' + newAmt;
+      document.getElementById('viewCreditBlock').style.display = 'flex';
+    } else {
+      document.getElementById('viewCreditBlock').style.display = 'none';
+    }
+    renderCustomerDb();
+    alert('✅ 餘額已更新為 $' + newAmt);
+  } catch(e) {
+    alert('錯誤：' + e.message);
+  }
+}
+
+function cancelCreditEdit() {
+  document.getElementById('creditEditRow').style.display = 'none';
+}
+
+function clearCreditFromView() {
+  const id = Number(document.getElementById('viewModalId').value);
+  const r = (window.customerDb||[]).find(r => Number(r.id) === id);
+  if (!r) return;
+  if (!confirm(`確定清除「${r.name}」的預留金餘額嗎？`)) return;
+  clearCreditBalance(r.name);
+  document.getElementById('viewCreditBlock').style.display = 'none';
+  renderCustomerDb();
+}
+
+function copyViewExport() {
+  const text = document.getElementById('viewModalExport').textContent;
+  const btn = event.target;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ 已複製';
+    setTimeout(() => btn.textContent = '📋 複製文字', 1500);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ 已複製';
+    setTimeout(() => btn.textContent = '📋 複製文字', 1500);
+  });
+}
+
+function saveCustomerInfo() {
+  const id = Number(document.getElementById('viewModalId').value);
+  const phone = document.getElementById('viewModalPhone').value.trim();
+  const address = document.getElementById('viewModalAddress').value.trim();
+
+  // Update all records with same name
+  const r = customerDb.find(r => Number(r.id) === id);
+  if (!r) return;
+
+  // Save to Firestore if available
+  if (window.saveToFirestore) {
+    // Update all records with same customer name
+    customerDb.filter(rec => rec.name === r.name).forEach(rec => {
+      rec.phone = phone;
+      rec.address = address;
+      if (rec._docId && window.updateFirestore) {
+        window.updateFirestore(rec._docId, { phone, address });
+      }
+    });
+  } else {
+    customerDb.filter(rec => rec.name === r.name).forEach(rec => {
+      rec.phone = phone;
+      rec.address = address;
+    });
+    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
+  }
+
+  const btn = document.querySelector('[onclick="saveCustomerInfo()"]');
+  const orig = btn.textContent;
+  btn.textContent = '✅ 已儲存';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function confirmDeleteFromView() {
+  const id = Number(document.getElementById('viewModalId').value);
+  const r = customerDb.find(r => Number(r.id) === id);
+  if (!r) return;
+  pendingDeleteId = id;
+  pendingDeleteSource = 'modal';
+  document.getElementById('confirmDeleteMsg').textContent = `「${r.name}」的訂單記錄將被永久刪除`;
+  document.getElementById('confirmDeleteModal').style.display = 'flex';
+}
+
+function confirmDeleteYes() {
+  if (!pendingDeleteId) return;
+  document.getElementById('confirmDeleteModal').style.display = 'none';
+  if (pendingDeleteSource === 'modal') {
+    document.getElementById('customerViewModal').style.display = 'none';
+  }
+  // 從 Firestore 刪除
+  if (window.deleteFromFirestore && pendingDeleteDocId) {
+    window.deleteFromFirestore(pendingDeleteDocId).catch(e => alert('刪除失敗：' + e.message));
+  } else {
+    customerDb = customerDb.filter(r => Number(r.id) !== pendingDeleteId);
+    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
+    renderCustomerDb(document.getElementById('customerSearchInput').value.trim());
+  }
+  pendingDeleteId = null;
+  pendingDeleteDocId = null;
+  pendingDeleteSource = '';
+}
+
+function confirmDeleteNo() {
+  document.getElementById('confirmDeleteModal').style.display = 'none';
+  pendingDeleteId = null;
+  pendingDeleteSource = '';
+}
+
+// Close modal on backdrop click
+document.getElementById('customerViewModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+
+// ── Statistics ───────────────────────────────────────────────
+let currentPeriod = 'weekly';
+
+// 取得週次標籤（以週二為起點）
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr.split(' ')[0]);
+  const day = d.getDay(); // 0=日,1=一,...,6=六
+  // 週期：二(2)三(3)四(4)五(5)六(6)日(0)一(1)
+  // 找本週的週二（起點）
+  const daysFromTue = (day === 0 ? 5 : day === 1 ? 6 : day - 2);
+  const tue = new Date(d);
+  tue.setDate(d.getDate() - daysFromTue);
+  return tue.toLocaleDateString('zh-TW');
+}
+
+// 取得月份標籤（週跨月歸上月）
+function getMonthKey(dateStr) {
+  const weekStart = getWeekKey(dateStr);
+  const d = new Date(weekStart);
+  return `${d.getFullYear()}年${d.getMonth()+1}月`;
+}
+
+function refreshStats() {
+  const db = window.customerDb || [];
+  if (db.length === 0) {
+    document.getElementById('statsPanel').style.display = 'block';
+    document.getElementById('statsContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('statsPanel').style.display = 'none';
+  document.getElementById('statsContent').style.display = 'block';
+
+  // 總覽
+  const names = [...new Set(db.map(r => r.name))];
+  const totalRevenue = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalAmount || 0), 0);
+  // 總件數：只算非已併入的訂單（避免重複計算）
+  const totalQtyAll = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0) + (r.manualMergeQtyTotal || 0), 0);
+  // 平均單件金額
+  const avgPrice = totalQtyAll > 0 ? Math.round(totalRevenue / totalQtyAll) : 0;
+
+  document.getElementById('statTotalCustomers').textContent = names.length;
+  document.getElementById('statTotalOrders').textContent = db.length; // 含已併入
+  document.getElementById('statTotalQty').textContent = totalQtyAll;
+  document.getElementById('statAvgPrice').textContent = '$' + avgPrice.toLocaleString();
+  document.getElementById('statTotalRevenue').textContent = '$' + totalRevenue.toLocaleString();
+
+  // 週/月統計
+  showPeriod(currentPeriod);
+
+  // 排行榜
+  const byName = {};
+  // 訂單數：所有單都算（含已併入），反映真實下單次數
+  db.forEach(r => {
+    if (!byName[r.name]) byName[r.name] = { orders: 0, amount: 0 };
+    byName[r.name].orders++;
+  });
+  // 金額：只算非已併入的單，避免重複計算
+  db.filter(r => !r.mergedInto).forEach(r => {
+    if (!byName[r.name]) byName[r.name] = { orders: 0, amount: 0 };
+    byName[r.name].amount += (r.totalAmount || 0);
+  });
+
+  const sorted = Object.entries(byName).sort((a,b) => b[1].orders - a[1].orders).slice(0, 30);
+  const sortedAmt = Object.entries(byName).sort((a,b) => b[1].amount - a[1].amount).slice(0, 30);
+
+  document.getElementById('rankByOrders').innerHTML = sorted.map(([name, v], i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;margin-bottom:4px;background:var(--surface2)">
+      <span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:${i<3?'#f59e0b':'var(--muted)'};width:20px;text-align:center;font-weight:700">${i+1}</span>
+      <span style="flex:1;font-size:0.82rem;color:var(--text)">${name}</span>
+      <span style="font-family:'Space Mono',monospace;font-size:0.82rem;font-weight:700;color:#a78bfa">${v.orders}筆</span>
+    </div>
+  `).join('');
+
+  document.getElementById('rankByAmount').innerHTML = sortedAmt.map(([name, v], i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;margin-bottom:4px;background:var(--surface2)">
+      <span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:${i<3?'#f59e0b':'var(--muted)'};width:20px;text-align:center;font-weight:700">${i+1}</span>
+      <span style="flex:1;font-size:0.82rem;color:var(--text)">${name}</span>
+      <span style="font-family:'Space Mono',monospace;font-size:0.82rem;font-weight:700;color:#4ade80">$${v.amount.toLocaleString()}</span>
+    </div>
+  `).join('');
+}
+
+function getYearKey(dateStr) {
+  const d = new Date(dateStr.split(' ')[0]);
+  return `${d.getFullYear()}年`;
+}
+
+function clearDateFilter() {
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  showPeriod(currentPeriod);
+}
+
+function updateYearFilter(db) {
+  const sel = document.getElementById('filterYear');
+  if (!sel) return;
+  const years = [...new Set(db.map(r => new Date(r.date.split(' ')[0]).getFullYear()))].sort((a,b) => b-a);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部</option>' + years.map(y => `<option value="${y}" ${String(y)===cur?'selected':''}>${y}年</option>`).join('');
+}
+
+function filterDbByDateRange(db) {
+  const yearVal = document.getElementById('filterYear')?.value || '';
+  const fromVal = document.getElementById('dateFrom')?.value || '';
+  const toVal = document.getElementById('dateTo')?.value || '';
+  return db.filter(r => {
+    const dateStr = r.date.split(' ')[0];
+    const d = new Date(dateStr);
+    if (yearVal && String(d.getFullYear()) !== yearVal) return false;
+    if (fromVal && dateStr < fromVal) return false;
+    if (toVal && dateStr > toVal) return false;
+    return true;
+  });
+}
+
+function showPeriod(type) {
+  currentPeriod = type;
+  const allDb = window.customerDb || [];
+  updateYearFilter(allDb);
+  const db = filterDbByDateRange(allDb);
+
+  // Update button styles
+  const bw = document.getElementById('btnWeekly');
+  const bm = document.getElementById('btnMonthly');
+  const by = document.getElementById('btnYearly');
+  [bw, bm, by].forEach(b => {
+    if (b) { b.style.background = 'transparent'; b.style.color = 'var(--muted)'; b.style.borderColor = 'var(--border)'; }
+  });
+  const activeBtn = type === 'weekly' ? bw : type === 'monthly' ? bm : by;
+  if (activeBtn) {
+    activeBtn.style.background = 'rgba(245,158,11,0.15)';
+    activeBtn.style.color = '#f59e0b';
+    activeBtn.style.borderColor = '#f59e0b';
+  }
+
+  const periodMap = {};
+  const getKey = r => type === 'daily' ? getDayKey(r.date) : type === 'weekly' ? getWeekKey(r.date) : type === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
+
+  // 訂單數：所有單都算（含已併入）
+  db.forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = { orders: 0, amount: 0 };
+    periodMap[key].orders++;
+  });
+  // 金額：只算非已併入的單
+  db.filter(r => !r.mergedInto).forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = { orders: 0, amount: 0 };
+    periodMap[key].amount += (r.totalAmount || 0);
+  });
+
+  const rows = Object.entries(periodMap).sort((a,b) => b[0].localeCompare(a[0]));
+  const label = type === 'daily' ? '日期' : type === 'weekly' ? '週起始（週二）' : type === 'monthly' ? '月份' : '年份';
+  const totalAmt = rows.reduce((s, [,v]) => s + v.amount, 0);
+  const totalOrd = rows.reduce((s, [,v]) => s + v.orders, 0);
+
+  document.getElementById('periodTable').innerHTML = rows.length === 0 ?
+    '<div style="text-align:center;padding:20px;color:var(--muted)">此範圍無資料</div>' :
+    `<table style="width:100%;border-collapse:collapse;font-size:0.83rem">
+      <thead>
+        <tr style="background:var(--surface2)">
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase">${label}</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:0.72rem;text-transform:uppercase">訂單數</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:0.72rem;text-transform:uppercase">營業額</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(([k, v]) => `
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 10px;color:var(--text)">${k}</td>
+          <td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:'Space Mono',monospace;font-weight:700">${v.orders}</td>
+          <td style="padding:8px 10px;text-align:right;color:#4ade80;font-family:'Space Mono',monospace;font-weight:700">$${v.amount.toLocaleString()}</td>
+        </tr>`).join('')}
+        <tr style="background:var(--surface2);font-weight:700">
+          <td style="padding:8px 10px;color:var(--accent)">合計</td>
+          <td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:'Space Mono',monospace">${totalOrd}</td>
+          <td style="padding:8px 10px;text-align:right;color:#4ade80;font-family:'Space Mono',monospace">$${totalAmt.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+// ── Item Row UI ──────────────────────────────────────────────
+let itemCategories = JSON.parse(localStorage.getItem('statuItemCategories') || 'null') || 
+  ['上半身','下半身','百貨','飾品','贈品'];
+let itemRowCount = 0;
+
+function renderItemCategories(rowId, selectedName) {
+  const list = document.getElementById('catList_' + rowId);
+  if (!list) return;
+  if (itemCategories.length === 0) {
+    list.innerHTML = '<div style="padding:10px;text-align:center;color:var(--muted);font-size:0.8rem">尚無品項，請按＋新增</div>';
+    return;
+  }
+  list.innerHTML = itemCategories.map((cat, idx) => `
+    <div onclick="selectCategory(${rowId}, '${cat.replace(/'/g,"\\'")}', this)" style="
+      padding:8px 10px;cursor:pointer;font-size:0.85rem;border-radius:6px;margin-bottom:2px;
+      color:${selectedName===cat?'var(--accent)':'var(--text)'};
+      background:${selectedName===cat?'rgba(245,197,66,0.12)':'transparent'};
+      font-weight:${selectedName===cat?'700':'400'};
+      display:flex;align-items:center;justify-content:space-between;"
+      onmouseover="this.style.background='rgba(245,197,66,0.08)'"
+      onmouseout="this.style.background='${selectedName===cat?'rgba(245,197,66,0.12)':'transparent'}'">
+      <span>${cat}</span>
+    </div>
+  `).join('');
+}
+
+function toggleCatDropdown(rowId) {
+  // Close all other dropdowns first
+  document.querySelectorAll('[id^="catDropdown_"]').forEach(d => {
+    if (d.id !== 'catDropdown_' + rowId) d.style.display = 'none';
+  });
+  const dd = document.getElementById('catDropdown_' + rowId);
+  if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectCategory(rowId, name, el) {
+  document.getElementById('catLabel_' + rowId).textContent = name + ' ▼';
+  document.getElementById('catDropdown_' + rowId).style.display = 'none';
+  updateItemName(rowId);
+  renderItemCategories(rowId, name);
+}
+
+function updateItemName(rowId) {
+  const prefix = document.getElementById('prefix_' + rowId)?.value.trim() || '';
+  const cat = document.getElementById('catLabel_' + rowId)?.textContent.replace(' ▼','').trim();
+  const catName = (cat === '選擇品項') ? '' : cat;
+  const isPreorder = document.getElementById('preorderBtn_' + rowId)?.getAttribute('data-on') === '1';
+  const full = (isPreorder ? '預購' : '') + prefix + catName;
+  const preview = document.getElementById('itemNamePreview_' + rowId);
+  if (preview) preview.textContent = full || '';
+}
+
+function addCategoryFromRow(rowId) {
+  document.getElementById('catDropdown_' + rowId).style.display = 'none';
+  showCatManageModal('add', rowId);
+}
+
+function showDeleteCategoryModal(rowId) {
+  document.getElementById('catDropdown_' + rowId).style.display = 'none';
+  showCatManageModal('delete', rowId);
+}
+
+let catManageRowId = null;
+let catManageMode = 'add';
+
+function showCatManageModal(mode, rowId) {
+  catManageMode = mode;
+  catManageRowId = rowId;
+  const modal = document.getElementById('catManageModal');
+  const title = document.getElementById('catManageTitle');
+  const body = document.getElementById('catManageBody');
+
+  if (mode === 'add') {
+    title.textContent = '＋ 新增品項';
+    body.innerHTML = `
+      <input id="newCatInput" placeholder="輸入品項名稱..." style="
+        width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:6px;
+        color:var(--text);font-size:0.9rem;padding:9px 12px;outline:none;
+        font-family:'Noto Sans TC',sans-serif;box-sizing:border-box;margin-bottom:12px;"
+        onkeydown="if(event.key==='Enter')confirmCatManage()">
+      <button onclick="confirmCatManage()" style="
+        width:100%;padding:10px;border-radius:8px;border:none;
+        background:#4ade80;color:#111;font-size:0.9rem;font-weight:700;
+        cursor:pointer;font-family:'Noto Sans TC',sans-serif;">新增</button>
+    `;
+    setTimeout(() => document.getElementById('newCatInput')?.focus(), 100);
+  } else {
+    title.textContent = '🗑 刪除品項';
+    body.innerHTML = itemCategories.length === 0
+      ? '<div style="text-align:center;color:var(--muted);padding:20px">尚無品項可刪除</div>'
+      : itemCategories.map((cat, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+          padding:8px 10px;border-radius:6px;margin-bottom:4px;background:var(--surface2)">
+          <span style="font-size:0.88rem;color:var(--text)">${cat}</span>
+          <button onclick="deleteCategoryItem('${cat.replace(/'/g,"\\'")}', this)" style="
+            padding:3px 10px;border-radius:5px;border:1px solid #fb7185;
+            background:transparent;color:#fb7185;font-size:0.75rem;font-weight:700;
+            cursor:pointer;font-family:'Noto Sans TC',sans-serif;">刪除</button>
+        </div>
+      `).join('');
+  }
+  modal.style.display = 'flex';
+}
+
+function confirmCatManage() {
+  const input = document.getElementById('newCatInput');
+  if (!input) return;
+  const n = input.value.trim();
+  if (!n) return;
+  if (!itemCategories.includes(n)) {
+    itemCategories.push(n);
+    localStorage.setItem('statuItemCategories', JSON.stringify(itemCategories));
+  }
+  refreshAllCatLists();
+  if (catManageRowId) selectCategory(catManageRowId, n, null);
+  document.getElementById('catManageModal').style.display = 'none';
+}
+
+function deleteCategoryItem(cat, btn) {
+  itemCategories = itemCategories.filter(c => c !== cat);
+  localStorage.setItem('statuItemCategories', JSON.stringify(itemCategories));
+  btn.closest('div').remove();
+  refreshAllCatLists();
+}
+
+function refreshAllCatLists() {
+  for (let i = 1; i <= itemRowCount; i++) {
+    if (document.getElementById('catList_' + i)) renderItemCategories(i, '');
+  }
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('[id^="catBtn_"]') && !e.target.closest('[id^="catDropdown_"]')) {
+    document.querySelectorAll('[id^="catDropdown_"]').forEach(d => d.style.display = 'none');
+  }
+});
+
+function addItemRow(preset) {
+  itemRowCount++;
+  const id = itemRowCount;
+  const wrap = document.getElementById('itemInputList');
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = 'itemRow_' + id;
+  div.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
+      <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">品項</span>
+      <input id="prefix_${id}" placeholder="編號/備注..." style="
+        width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+        color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;
+        font-family:'Noto Sans TC',sans-serif;"
+        oninput="updateItemName(${id})"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'">
+      <div style="position:relative">
+        <button id="catBtn_${id}" onclick="toggleCatDropdown(${id})" style="
+          padding:5px 10px;border-radius:6px;border:1px solid var(--border);
+          background:var(--surface2);color:var(--text);font-size:0.82rem;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;
+          display:flex;align-items:center;gap:5px;">
+          <span id="catLabel_${id}">選擇品項 ▼</span>
+        </button>
+        <div id="catDropdown_${id}" style="
+          display:none;position:absolute;top:100%;left:0;z-index:3000;width:220px;
+          background:var(--surface);border:1px solid var(--accent);border-radius:10px;
+          box-shadow:0 8px 24px rgba(0,0,0,0.5);padding:8px;margin-top:4px">
+          <div id="catList_${id}" style="max-height:220px;overflow-y:auto;margin-bottom:6px"></div>
+          <div style="border-top:1px dashed var(--border);padding-top:6px;display:flex;gap:6px">
+            <button onclick="addCategoryFromRow(${id})" style="
+              flex:1;padding:6px 8px;border-radius:6px;border:1px solid #4ade80;
+              background:rgba(74,222,128,0.1);color:#4ade80;font-size:0.78rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">＋ 新增</button>
+            <button onclick="showDeleteCategoryModal(${id})" style="
+              flex:1;padding:6px 8px;border-radius:6px;border:1px solid #fb7185;
+              background:rgba(251,113,133,0.1);color:#fb7185;font-size:0.78rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">🗑 刪除</button>
+          </div>
+        </div>
+      </div>
+      <span id="itemNamePreview_${id}" style="font-size:0.82rem;color:var(--accent);font-weight:700;min-width:60px"></span>
+      <button id="preorderBtn_${id}" onclick="togglePreorder(${id})" style="
+        padding:5px 10px;border-radius:6px;border:1px solid #ccff00;
+        background:transparent;color:#ccff00;font-size:0.78rem;font-weight:700;
+        cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;
+        transition:all 0.15s;">預購</button>
+      <span style="font-size:0.78rem;color:var(--muted)">單價</span>
+      <input id="price_${id}" class="item-num-input" style="width:90px" type="text" inputmode="numeric" placeholder="0" value="${preset?.price||''}">
+      <span style="font-size:0.78rem;color:var(--muted)">數量</span>
+      <input id="qty_${id}" class="item-num-input" type="text" inputmode="numeric" placeholder="1" value="${preset?.qty||''}">
+      <span style="font-size:0.78rem;color:var(--accent);font-family:'Space Mono',monospace" id="subtotal_${id}"></span>
+      <button onclick="removeItemRow(${id})" style="
+        padding:4px 8px;border-radius:5px;border:1px solid #fb7185;
+        background:transparent;color:#fb7185;font-size:0.78rem;cursor:pointer;">✕</button>
+    </div>
+  `;
+  wrap.appendChild(div);
+  renderItemCategories(id, preset?.name || '');
+  // Live subtotal update
+  const qtyEl = document.getElementById('qty_'+id);
+  const priceEl = document.getElementById('price_'+id);
+  const updateSub = () => {
+    const q = parseFloat(qtyEl.value)||0;
+    const p = parseFloat(priceEl.value)||0;
+    const sub = document.getElementById('subtotal_'+id);
+    if (sub) sub.textContent = q&&p ? '= $'+(q*p) : '';
+  };
+  qtyEl.addEventListener('input', updateSub);
+  priceEl.addEventListener('input', updateSub);
+}
+
+function togglePreorder(id) {
+  const btn = document.getElementById('preorderBtn_' + id);
+  if (!btn) return;
+  const isOn = btn.getAttribute('data-on') === '1';
+  if (isOn) {
+    btn.setAttribute('data-on', '0');
+    btn.style.background = 'transparent';
+    btn.style.color = '#ccff00';
+    btn.textContent = '預購';
+  } else {
+    btn.setAttribute('data-on', '1');
+    btn.style.background = '#ccff00';
+    btn.style.color = '#111';
+    btn.textContent = '✔ 預購';
+  }
+  updateItemName(id);
+}
+
+function removeItemRow(id) {
+  const el = document.getElementById('itemRow_' + id);
+  if (el) el.remove();
+}
+
+
+
+function parseItemRows() {
+  const rows = document.querySelectorAll('.item-row');
+  if (rows.length === 0) { alert('請先新增品項'); return; }
+  let added = 0;
+  rows.forEach(row => {
+    const id = row.id.replace('itemRow_', '');
+    // Get item name: prefix + category
+    const prefix = document.getElementById('prefix_' + id)?.value.trim() || '';
+    const catLabel = document.getElementById('catLabel_' + id)?.textContent.replace(' ▼','').trim() || '';
+    const catName = (catLabel === '選擇品項') ? '' : catLabel;
+    const isPreorder = document.getElementById('preorderBtn_' + id)?.getAttribute('data-on') === '1';
+    let name = ((isPreorder ? '預購' : '') + prefix + catName).trim();
+    const qty = parseFloat(document.getElementById('qty_' + id)?.value) || 1;
+    const price = parseFloat(document.getElementById('price_' + id)?.value) || 0;
+    if (!name || price <= 0) return;
+    orders.push({ id: nextId++, name, qty, price, source: 'manual' });
+    added++;
+  });
+  if (added === 0) { alert('請確認每行都有填品項名稱和金額'); return; }
+  // Clear rows
+  document.getElementById('itemInputList').innerHTML = '';
+  itemRowCount = 0;
+  renderTable();
+}
+
+function togglePasteArea() {
+  const area = document.getElementById('pasteArea');
+  const arrow = document.getElementById('pasteArrow');
+  if (area.style.display === 'none') {
+    area.style.display = 'block'; arrow.textContent = '▼';
+  } else {
+    area.style.display = 'none'; arrow.textContent = '▶';
+  }
+}
+
+// Auto add first row on load
+window.addEventListener('load', () => {
+  addItemRow();
+});
+
+// ── Revenue Chart ────────────────────────────────────────────
+let currentChartMode = 'weekly';
+
+let currentChartType = 'revenue'; // 'revenue' or 'avg'
+
+function openRevenueChart() {
+  currentChartType = 'revenue';
+  currentChartMode = 'weekly';
+  document.getElementById('chartModalTitle').textContent = '📈 營業額圖表';
+  document.getElementById('chartModalTitle').style.color = '#4ade80';
+  document.getElementById('revenueChartModal').style.display = 'flex';
+  callCurrentChart('weekly');
+}
+
+function openAvgChart() {
+  currentChartType = 'avg';
+  currentChartMode = 'daily';
+  document.getElementById('chartModalTitle').textContent = '📊 平均單件金額圖表';
+  document.getElementById('chartModalTitle').style.color = '#fb923c';
+  document.getElementById('revenueChartModal').style.display = 'flex';
+  callCurrentChart('daily');
+}
+
+function callCurrentChart(mode) {
+  currentChartMode = mode;
+  if (currentChartType === 'revenue') renderChart(mode);
+  else renderAvgChart(mode);
+}
+
+function renderChart(mode) {
+  currentChartMode = mode;
+  // Update buttons
+  const activeColor = currentChartType === 'avg' ? '#fb923c' : '#4ade80';
+  const activeBg = currentChartType === 'avg' ? 'rgba(251,146,60,0.15)' : 'rgba(74,222,128,0.15)';
+  ['daily','weekly','monthly','yearly'].forEach(m => {
+    const btn = document.getElementById('chartBtn' + m.charAt(0).toUpperCase() + m.slice(1));
+    if (!btn) return;
+    if (m === mode) {
+      btn.style.background = activeBg; btn.style.color = activeColor; btn.style.borderColor = activeColor;
+    } else {
+      btn.style.background = 'transparent'; btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)';
+    }
+  });
+
+  const db = window.customerDb || [];
+  const periodMap = {};
+  const getKey = r => mode === 'weekly' ? getWeekKey(r.date) : mode === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
+
+  db.filter(r => !r.mergedInto).forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = 0;
+    periodMap[key] += (r.totalAmount || 0);
+  });
+
+  const rows = Object.entries(periodMap).sort((a,b) => a[0].localeCompare(b[0]));
+  const canvas = document.getElementById('revenueCanvas');
+  const noData = document.getElementById('chartNoData');
+
+  if (rows.length === 0) {
+    canvas.style.display = 'none';
+    noData.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  noData.style.display = 'none';
+
+  const labels = rows.map(([k]) => k);
+  const values = rows.map(([,v]) => v);
+  const maxVal = Math.max(...values);
+
+  // Set canvas size
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = Math.min(350, Math.max(200, W * 0.5));
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 20, right: 20, bottom: 60, left: 70 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.top + (cH / gridLines) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    // Y labels
+    const val = Math.round(maxVal * (1 - i / gridLines));
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `${11 * dpr / dpr}px Space Mono, monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + val.toLocaleString(), pad.left - 8, y + 4);
+  }
+
+  if (rows.length === 1) {
+    // Single bar
+    const bx = pad.left + cW / 2 - 20;
+    const bh = maxVal > 0 ? (values[0] / maxVal) * cH : cH * 0.5;
+    const by = pad.top + cH - bh;
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(bx, by, 40, bh);
+    ctx.fillStyle = '#4ade80';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[0], bx + 20, H - pad.bottom + 16);
+    ctx.fillStyle = 'white';
+    ctx.fillText('$' + values[0].toLocaleString(), bx + 20, by - 6);
+    return;
+  }
+
+  // Draw bars
+  const barW = Math.max(8, Math.min(40, cW / rows.length - 4));
+  const step = cW / rows.length;
+
+  rows.forEach(([label, val], i) => {
+    const x = pad.left + step * i + step / 2 - barW / 2;
+    const bh = maxVal > 0 ? (val / maxVal) * cH : 0;
+    const by = pad.top + cH - bh;
+
+    // Bar gradient
+    const grad = ctx.createLinearGradient(0, by, 0, pad.top + cH);
+    grad.addColorStop(0, '#4ade80');
+    grad.addColorStop(1, 'rgba(74,222,128,0.3)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, by, barW, bh, [3,3,0,0]) : ctx.rect(x, by, barW, bh);
+    ctx.fill();
+
+    // Value on top
+    if (bh > 20) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px Space Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('$' + (val >= 1000 ? (val/1000).toFixed(1)+'k' : val), x + barW/2, by - 4);
+    }
+
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Noto Sans TC, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(x + barW/2, H - pad.bottom + 10);
+    if (rows.length > 8) {
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'right';
+    }
+    ctx.fillText(label.replace('年','').replace('2026/',''), 0, 0);
+    ctx.restore();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + cH);
+  ctx.lineTo(pad.left + cW, pad.top + cH);
+  ctx.stroke();
+}
+
+// ── Avg Price Chart ──────────────────────────────────────────
+function getDayKey(dateStr) {
+  return dateStr.split(' ')[0]; // YYYY/M/D
+}
+
+function renderAvgChart(mode) {
+  const db = window.customerDb || [];
+  const periodMap = {};
+  const getKey = r => {
+    if (mode === 'daily') return getDayKey(r.date);
+    if (mode === 'weekly') return getWeekKey(r.date);
+    if (mode === 'monthly') return getMonthKey(r.date);
+    return getYearKey(r.date);
+  };
+
+  db.filter(r => !r.mergedInto).forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = { amount: 0, qty: 0 };
+    periodMap[key].amount += (r.totalAmount || 0);
+    periodMap[key].qty += (r.totalQty || 0) + (r.mergeQtyTotal || 0) + (r.manualMergeQtyTotal || 0);
+  });
+
+  const rows = Object.entries(periodMap)
+    .map(([k, v]) => [k, v.qty > 0 ? Math.round(v.amount / v.qty) : 0])
+    .sort((a,b) => a[0].localeCompare(b[0]));
+
+  const canvas = document.getElementById('revenueCanvas');
+  const noData = document.getElementById('chartNoData');
+
+  if (rows.length === 0) {
+    canvas.style.display = 'none'; noData.style.display = 'block'; return;
+  }
+  canvas.style.display = 'block'; noData.style.display = 'none';
+
+  const labels = rows.map(([k]) => k);
+  const values = rows.map(([,v]) => v);
+  const maxVal = Math.max(...values);
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = Math.min(350, Math.max(200, W * 0.5));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 20, right: 20, bottom: 60, left: 70 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + (cH / 5) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    const val = Math.round(maxVal * (1 - i / 5));
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px Space Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + val.toLocaleString(), pad.left - 8, y + 4);
+  }
+
+  // Line chart
+  const step = rows.length > 1 ? cW / (rows.length - 1) : cW / 2;
+  const pts = values.map((v, i) => ({
+    x: pad.left + (rows.length > 1 ? step * i : cW / 2),
+    y: pad.top + cH - (maxVal > 0 ? (v / maxVal) * cH : 0)
+  }));
+
+  // Area fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+  grad.addColorStop(0, 'rgba(251,146,60,0.3)');
+  grad.addColorStop(1, 'rgba(251,146,60,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pad.top + cH);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, pad.top + cH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#fb923c';
+  ctx.lineWidth = 2.5;
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+
+  // Dots + labels
+  pts.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fb923c';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = '10px Space Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('$' + values[i].toLocaleString(), p.x, p.y - 10);
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Noto Sans TC, sans-serif';
+    ctx.save();
+    ctx.translate(p.x, H - pad.bottom + 10);
+    if (rows.length > 8) { ctx.rotate(-Math.PI / 4); ctx.textAlign = 'right'; }
+    ctx.fillText(labels[i].replace('年','').replace('2026/',''), 0, 0);
+    ctx.restore();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + cH);
+  ctx.lineTo(pad.left + cW, pad.top + cH);
+  ctx.stroke();
+}
+
+// ── Daily Quote ──────────────────────────────────────────────
+const dailyQuotes = [
+  '每一件衣服都是一個故事的開始 👗',
+  '辛苦的背後是滿滿的成就感 ✨',
+  '今天的努力是明天幸福的種子 🌱',
+  '老婆最美，加油！ 💪',
+  '用心做好每一件事，幸福自然來 🌸',
+  '每一位客人的微笑都是最好的回報 😊',
+  '小店用心經營，大夢慢慢實現 🌟',
+  '今天也要閃閃發光喔！ ⭐',
+  '累了就休息，但別忘了你有多棒 💗',
+  '每一筆訂單都是一份信任 🤝',
+  '把熱情放進每一件衣服裡 👕',
+  '溫柔待人，溫柔待己 🌷',
+  '你的努力，家人都看在眼裡 ❤️',
+  '今天也是充滿可能的一天 🌈',
+  '幸福不遠，就在每一個用心的瞬間 💫',
+  '每一天都是新的開始，加油！ 🌅',
+  '謝謝你每天這麼認真 💝',
+  '小小的堅持，成就大大的夢想 🦋',
+  '今天的妳，依然是最厲害的 👑',
+  '客人的喜悅，是最美的風景 🌺',
+  '努力不一定馬上看到結果，但一定不會白費 🌻',
+  '把愛融入工作，工作就是享受 💖',
+  '再忙也要記得照顧自己 🫶',
+  '每一個細節都是你用心的證明 🎀',
+  '好的事情正在路上，請耐心等待 🌙',
+  '你的笑容是最好的招牌 😄',
+  '辛苦了，今天也謝謝你 🙏',
+  '每件衣服出門前，都帶著你的心意 💌',
+  '堅持下去，花會開的 🌼',
+  '今天辛苦，明天的你會感謝自己 🌟',
+  '小店有溫度，才是最美的樣子 🏠',
+  '每一個訂單背後，都有一個期待的心 💕',
+  '你做的每件事，都有意義 🌿',
+  '時間會證明你的努力沒有白費 ⏳',
+  '把快樂傳遞給每一位客人 🎁',
+  '最美的風景，是你努力的樣子 📸',
+  '記得多喝水，照顧好自己 💧',
+  '今天也是幸福的一天 🍀',
+  '感謝每一位相信你的客人 🌠',
+  '老婆辛苦了，你是最棒的！ 🥰',
+];
+
+window.addEventListener('load', () => {
+  const el = document.getElementById('dailyQuote');
+  if (el) {
+    const q = dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)];
+    el.textContent = q;
+  }
+});
+
+// ── Typing Demo ──────────────────────────────────────────────
+const demoLines = [
+  '格式：品項名稱  數量  單項金額（每行一筆）',
+  '',
+  '例如：',
+  '格紋短袖上衣 2 350',
+  '預購 格紋上衣 2 350',
+  '預購到貨 花漾洋裝 3',
+  '船型襪 5 65',
+  '棉質內褲 2 199',
+];
+const demoFull = demoLines.join('\n');
+let demoIdx = 0;
+let demoTimer = null;
+
+function startTypingDemo() {
+  const demo = document.getElementById('typingDemo');
+  const ta = document.getElementById('inputText');
+  if (!demo) return;
+  // Only show when textarea is empty and not focused
+  if (ta.value !== '') { demo.textContent = ''; return; }
+  demoIdx = 0;
+  demo.textContent = '';
+  clearInterval(demoTimer);
+  demoTimer = setInterval(() => {
+    if (ta.value !== '') { demo.textContent = ''; clearInterval(demoTimer); return; }
+    if (demoIdx <= demoFull.length) {
+      demo.textContent = demoFull.slice(0, demoIdx);
+      demoIdx++;
+    } else {
+      // Pause then restart
+      clearInterval(demoTimer);
+      setTimeout(() => startTypingDemo(), 2000);
+    }
+  }, 60);
+}
+
+document.getElementById('inputText').addEventListener('focus', () => {
+  clearInterval(demoTimer);
+  document.getElementById('typingDemo').textContent = '';
+});
+document.getElementById('inputText').addEventListener('blur', () => {
+  if (document.getElementById('inputText').value === '') startTypingDemo();
+});
+document.getElementById('inputText').addEventListener('input', () => {
+  const demo = document.getElementById('typingDemo');
+  if (document.getElementById('inputText').value !== '') demo.textContent = '';
+  else startTypingDemo();
+});
+
+window.addEventListener('load', () => setTimeout(startTypingDemo, 500));
+
+// ── Keyboard support for calculator
+document.addEventListener('keydown', e => {
+  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+  if (e.key >= '0' && e.key <= '9') calcNum(e.key);
+  else if (e.key === '+') calcOp('+');
+  else if (e.key === '-') calcOp('-');
+  else if (e.key === '*') calcOp('*');
+  else if (e.key === '/') { e.preventDefault(); calcOp('/'); }
+  else if (e.key === '.' || e.key === ',') calcDot();
+  else if (e.key === 'Enter' || e.key === '=') calcEq();
+  else if (e.key === 'Backspace') calcDel();
+  else if (e.key === 'Escape') calcClear();
+});
+
+// Enter key in add-row
+
+</script>
+</body>
+</html>
