@@ -651,11 +651,11 @@
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
             <span class="summary-label" style="color:#fb923c">＋60 超取</span>
             <button id="btnShip60" onclick="setShipping('超商')" style="
-              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              padding:4px 12px;border-radius:5px;font-size:0.88rem;font-weight:700;cursor:pointer;
               border:1px solid #fb923c;background:transparent;color:#fb923c;font-family:'Noto Sans TC',sans-serif;
               transition:all 0.15s">選擇</button>
             <button id="btnFree60" onclick="setFreeShipping('超商')" style="
-              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              padding:4px 12px;border-radius:5px;font-size:0.88rem;font-weight:700;cursor:pointer;
               border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
               transition:all 0.15s">免運</button>
           </div>
@@ -670,11 +670,11 @@
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
             <span class="summary-label" style="color:#a78bfa">＋80 郵寄</span>
             <button id="btnShip80" onclick="setShipping('郵局')" style="
-              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              padding:4px 12px;border-radius:5px;font-size:0.88rem;font-weight:700;cursor:pointer;
               border:1px solid #a78bfa;background:transparent;color:#a78bfa;font-family:'Noto Sans TC',sans-serif;
               transition:all 0.15s">選擇</button>
             <button id="btnFree80" onclick="setFreeShipping('郵局')" style="
-              padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
+              padding:4px 12px;border-radius:5px;font-size:0.88rem;font-weight:700;cursor:pointer;
               border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
               transition:all 0.15s">免運</button>
           </div>
@@ -701,8 +701,8 @@
         <button id="btn_亦郵局" class="profile-btn" style="color:#ff8c00;border-color:#ff8c00" onclick="openProfile('亦郵局')">亦郵局</button>
         <button id="btn_亦中信" class="profile-btn" style="color:#ff8c00;border-color:#ff8c00" onclick="openProfile('亦中信')">亦中信</button>
         <button class="btn-secondary" style="padding:5px 12px;font-size:0.78rem;color:#39ff14;border-color:#39ff14" onclick="generateExport()">重新產生</button>
-        <button class="btn-primary" style="padding:5px 14px;font-size:0.78rem" id="copyExportBtn" onclick="copyExport()">📋 複製文字</button>
-        <button class="btn-secondary" style="padding:5px 14px;font-size:0.78rem;color:#f59e0b;border-color:#f59e0b" onclick="saveCurrentCustomer()">💾 儲存本單</button>
+        <button class="btn-primary" style="padding:7px 18px;font-size:0.95rem" id="copyExportBtn" onclick="copyExport()">📋 複製文字</button>
+        <button class="btn-secondary" style="padding:7px 18px;font-size:0.95rem;color:#f59e0b;border-color:#f59e0b" onclick="saveCurrentCustomer()">💾 儲存本單</button>
       </div>
     </div>
     <div class="panel-body">
@@ -786,7 +786,15 @@
   <!-- CUSTOMER DATABASE PANEL -->
   <div class="panel full">
     <div class="panel-header">
-      <div class="panel-title"><span class="dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span><span style="color:#f59e0b">👤 客戶訂單資料庫</span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="panel-title"><span class="dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span><span style="color:#f59e0b">👤 客戶訂單資料庫</span></div>
+        <span style="font-size:0.75rem;background:rgba(245,197,66,0.15);border:1px solid #f5c542;border-radius:6px;padding:2px 8px;color:#f5c542;font-family:'Space Mono',monospace">
+          ✔ 結單 <span id="statSettledCount">0</span>
+        </span>
+        <span style="font-size:0.75rem;background:rgba(251,113,133,0.15);border:1px solid #fb7185;border-radius:6px;padding:2px 8px;color:#fb7185;font-family:'Space Mono',monospace">
+          ⚠ 未結 <span id="statUnsettledCount">0</span>
+        </span>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="btn-primary" style="padding:5px 14px;font-size:0.78rem" onclick="saveCurrentCustomer()">💾 儲存本單</button>
         <input id="customerSearchInput" placeholder="搜尋客戶名稱..." style="
@@ -1699,7 +1707,9 @@ function generateExport() {
     ...mergeLines,
     ...(reserveTotal > 0 ? [`（預留金 -$${reserveTotal}）`] : []),
     '',
-    ...(freeShipping && shippingMode === '超商' ? [`超取免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
+    // 若合計為負數，顯示預留金餘額而非匯款總金額
+    ...(totalAmount < 0 ? [`💰 預留金餘額 ＄${Math.abs(totalAmount)}`] :
+        freeShipping && shippingMode === '超商' ? [`超取免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
         freeShipping && shippingMode === '郵局' ? [`郵寄免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
         shippingMode === '超商' ? [`+${shipFee60}超取`, ``, `▶▶ 匯款總金額 ＄${amt60} ◀◀`] :
         shippingMode === '郵局' ? [`+${shipFee80}郵寄`, ``, `▶▶ 匯款總金額 ＄${amt80} ◀◀`] :
@@ -2050,6 +2060,15 @@ function renderCustomerDb(filter = '') {
   }
   list.style.display = 'block';
   empty.style.display = 'none';
+
+  // Update counters
+  const allDb = window.customerDb || [];
+  const settledCount = allDb.filter(r => r.settled && !r.mergedInto && !r.isCreditOrder).length;
+  const unsettledCount = allDb.filter(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0).length;
+  const sc = document.getElementById('statSettledCount');
+  const uc = document.getElementById('statUnsettledCount');
+  if (sc) sc.textContent = settledCount;
+  if (uc) uc.textContent = unsettledCount;
 
   // 依名字分組
   const groups = {};
