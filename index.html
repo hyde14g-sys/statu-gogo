@@ -1560,9 +1560,8 @@ function dismissUnsettled() {
 }
 
 function applyCreditBalance(amount) {
-  document.getElementById('reserveAmount').value = -amount;
-  // Set negative reserve (credit)
-  reserveTotal = -amount;
+  document.getElementById('reserveAmount').value = amount;
+  reserveTotal = amount;
   updateSummary();
   generateExport();
   document.getElementById('creditBalanceAlert').style.display = 'none';
