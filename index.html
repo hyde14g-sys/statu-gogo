@@ -610,6 +610,21 @@
       </div>
       <span style="font-size:0.78rem;color:var(--muted)">（從合計總金額中扣除）</span>
     </div>
+    <!-- 上期併單（手動輸入）-->
+    <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
+      <label style="color:#60a5fa;font-size:0.82rem;white-space:nowrap">🔗 上期併單</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">金額</label>
+        <input type="text" inputmode="numeric" id="manualMergeAmount" class="num" placeholder="上期總金額" style="width:120px"
+          oninput="applyManualMerge()">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">件數</label>
+        <input type="text" inputmode="numeric" id="manualMergeQty" class="num" placeholder="件數" style="width:80px"
+          oninput="applyManualMerge()">
+      </div>
+      <span style="font-size:0.78rem;color:var(--muted)">（手動輸入上期併單）</span>
+    </div>
     <!-- 瑕疵品 -->
     <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
       <label style="color:#fb7185;font-size:0.82rem;white-space:nowrap">⚠️ 瑕疵品</label>
@@ -1175,7 +1190,10 @@ function clearTable() {
   document.getElementById('reserveAmount').value = '';
   document.getElementById('defectAmount').value = '';
   document.getElementById('defectQty').value = '';
+  document.getElementById('manualMergeAmount').value = '';
+  document.getElementById('manualMergeQty').value = '';
   defectTotal = 0; defectQtyVal = 0;
+  manualMergeTotal = 0; manualMergeQtyTotal = 0;
   document.getElementById('mergeStatBlock').style.display = 'none';
   document.getElementById('totalQtyAllBlock').style.display = 'none';
   document.getElementById('summaryBar').style.display = 'none';
@@ -1187,7 +1205,7 @@ function updateSummary() {
   const totalItems = orders.length;
   const totalQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + (o.qty * o.price), 0));
-  const totalAmount = ordersAmount + mergeTotal - reserveTotal - defectTotal;
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal - defectTotal;
   document.getElementById('totalItems').textContent = totalItems;
   document.getElementById('totalQty').textContent = totalQty % 1 === 0 ? totalQty : totalQty.toFixed(1);
   document.getElementById('currentAmount').textContent = '$' + ordersAmount;
@@ -1195,6 +1213,21 @@ function updateSummary() {
   document.getElementById('amt60').textContent = '$' + (totalAmount + 60 * shipCount60);
   document.getElementById('amt80').textContent = '$' + (totalAmount + 80 * shipCount80);
   document.getElementById('summaryBar').style.display = 'block';
+  // Show manual merge in summary if set
+  const manualMergeBlock = document.getElementById('mergeStatBlock');
+  if (manualMergeBlock && manualMergeTotal > 0 && mergeTotal === 0) {
+    manualMergeBlock.style.display = 'block';
+    document.getElementById('mergeAmountDisplay').textContent = '$' + manualMergeTotal;
+    if (manualMergeQtyTotal > 0) {
+      document.getElementById('mergeQtyBlock').style.display = 'flex';
+      document.getElementById('mergeQtyDisplay').textContent = manualMergeQtyTotal + ' 件';
+      const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+      document.getElementById('totalQtyAllBlock').style.display = 'flex';
+      document.getElementById('totalQtyAllDisplay').textContent = (curQty + manualMergeQtyTotal) + ' 件';
+    }
+  } else if (manualMergeBlock && manualMergeTotal === 0 && mergeTotal === 0) {
+    manualMergeBlock.style.display = 'none';
+  }
   const reserveBlock = document.getElementById('reserveStatBlock');
   if (reserveBlock) {
     if (reserveTotal > 0) {
@@ -1230,6 +1263,8 @@ function updateSummary() {
 
 // ── Add Row ──────────────────────────────────────────────────
 let mergeTotal = 0;
+let manualMergeTotal = 0;  // 手動輸入的上期併單金額
+let manualMergeQtyTotal = 0;  // 手動輸入的上期併單件數
 
 let mergeQtyTotal = 0;
 let reserveTotal = 0;
@@ -1249,10 +1284,9 @@ function addMergeAmount() {
   if (mergeQtyTotal > 0) {
     document.getElementById('mergeQtyBlock').style.display = 'flex';
     document.getElementById('mergeQtyDisplay').textContent = mergeQtyTotal + ' 件';
-    // calc current totalQty from orders
     const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
     document.getElementById('totalQtyAllBlock').style.display = 'flex';
-    document.getElementById('totalQtyAllDisplay').textContent = (curQty + mergeQtyTotal) + ' 件';
+    document.getElementById('totalQtyAllDisplay').textContent = (curQty + mergeQtyTotal + manualMergeQtyTotal) + ' 件';
   }
   updateSummary();
   generateExport();
@@ -1272,6 +1306,13 @@ function applyReserve() {
 function applyDefect() {
   defectTotal = parseFloat(document.getElementById('defectAmount').value) || 0;
   defectQtyVal = parseFloat(document.getElementById('defectQty').value) || 0;
+  updateSummary();
+  generateExport();
+}
+
+function applyManualMerge() {
+  manualMergeTotal = parseFloat(document.getElementById('manualMergeAmount').value) || 0;
+  manualMergeQtyTotal = parseFloat(document.getElementById('manualMergeQty').value) || 0;
   updateSummary();
   generateExport();
 }
@@ -1508,14 +1549,15 @@ function generateExport() {
   });
 
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty * o.price, 0));
-  const totalAmount = ordersAmount + mergeTotal - reserveTotal - defectTotal;
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal - defectTotal;
   const totalQty    = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
   const amt60       = totalAmount + 60 * shipCount60;
   const amt80       = totalAmount + 80 * shipCount80;
   const shipFee60   = 60 * shipCount60;
   const shipFee80   = 80 * shipCount80;
 
-  const totalQtyAll = mergeQtyTotal > 0 ? totalQty + mergeQtyTotal : 0;
+  const totalManualMergeQty = manualMergeQtyTotal || 0;
+  const totalQtyAll = (mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQty + mergeQtyTotal + totalManualMergeQty : 0;
   const mergeLines = mergeTotal > 0 ? [
     `（前次合併單 $${mergeTotal}）`,
     mergeQtyTotal > 0 ? `（上期件數 ${mergeQtyTotal} 件）` : '',
@@ -1524,7 +1566,7 @@ function generateExport() {
   const text = [
     '每週結單',
     ...(customerType === 'old' ? [
-      `共 ${mergeQtyTotal > 0 ? totalQtyAll : totalQty} 件`,
+      `共 ${(mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQtyAll : totalQty} 件`,
       `這周新的訂單件數 ${totalQty} 件`,
     ] : []),
     '',
@@ -1804,7 +1846,9 @@ function saveCurrentCustomer() {
     orders: JSON.parse(JSON.stringify(orders)),
     mergedFromIds,  // 記錄合併了哪些舊單
     hasMerge: mergedFromIds.length > 0,
-    mergeQtyTotal,  // 合併進來的上期件數
+    mergeQtyTotal,  // 合併進來的上期件數（自動）
+    manualMergeTotal,  // 手動輸入的上期併單金額
+    manualMergeQtyTotal,  // 手動輸入的上期件數
   };
 
   // 儲存到 Firestore（雲端共用）
