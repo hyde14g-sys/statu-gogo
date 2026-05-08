@@ -1365,8 +1365,9 @@ function checkUnsettledForCustomer(name) {
   if (unsettled.length === 0) { alert.style.display = 'none'; return; }
 
   const totalAmt = unsettled.reduce((s, r) => s + (r.totalAmount || 0), 0);
-  // 深度計算件數：遞迴追溯所有已被合併進來的舊單
-  const totalQtyVal = unsettled.reduce((s, r) => s + getTotalQtyDeep(r, db), 0);
+  // 件數：自身件數 + 儲存時記錄的上期件數（mergeQtyTotal）
+  // 不用遞迴，因為 mergeQtyTotal 已經包含所有被合併進來的件數
+  const totalQtyVal = unsettled.reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0), 0);
 
   // Show detail for each unsettled order
   const detailHtml = unsettled.map(r => {
