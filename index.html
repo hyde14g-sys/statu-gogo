@@ -599,17 +599,6 @@
       <input type="hidden" id="mergeAmount">
       <input type="hidden" id="mergeQty">
     </div>
-    <!-- 預留金 -->
-    <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
-      <label style="color:#f472b6;font-size:0.82rem;white-space:nowrap">💰 預留金</label>
-      <div style="display:flex;align-items:center;gap:6px">
-        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">金額</label>
-        <input type="text" inputmode="numeric" id="reserveAmount" class="num" placeholder="預留金額" style="width:120px"
-          onkeydown="if(event.key==='Enter') applyReserve()"
-          oninput="applyReserve()">
-      </div>
-      <span style="font-size:0.78rem;color:var(--muted)">（從合計總金額中扣除）</span>
-    </div>
     <!-- 上期併單（手動輸入）-->
     <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
       <label style="color:#60a5fa;font-size:0.82rem;white-space:nowrap">🔗 上期併單</label>
@@ -625,18 +614,14 @@
       </div>
       <span style="font-size:0.78rem;color:var(--muted)">（手動輸入上期併單）</span>
     </div>
-    <!-- 瑕疵品 -->
+    <!-- 預留金 -->
     <div style="display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px dashed var(--border);flex-wrap:wrap;align-items:center">
-      <label style="color:#fb7185;font-size:0.82rem;white-space:nowrap">⚠️ 瑕疵品</label>
-      <div style="display:flex;align-items:center;gap:6px">
-        <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">數量</label>
-        <input type="text" inputmode="numeric" id="defectQty" class="num" placeholder="件數" style="width:80px"
-          oninput="applyDefect()">
-      </div>
+      <label style="color:#f472b6;font-size:0.82rem;white-space:nowrap">💰 預留金</label>
       <div style="display:flex;align-items:center;gap:6px">
         <label style="color:var(--muted);font-size:0.78rem;white-space:nowrap">金額</label>
-        <input type="text" inputmode="numeric" id="defectAmount" class="num" placeholder="扣除金額" style="width:100px"
-          oninput="applyDefect()">
+        <input type="text" inputmode="numeric" id="reserveAmount" class="num" placeholder="預留金額" style="width:120px"
+          onkeydown="if(event.key==='Enter') applyReserve()"
+          oninput="applyReserve()">
       </div>
       <span style="font-size:0.78rem;color:var(--muted)">（從合計總金額中扣除）</span>
     </div>
@@ -1188,11 +1173,8 @@ function clearTable() {
   document.getElementById('mergeAmount').value = '';
   document.getElementById('mergeQty').value = '';
   document.getElementById('reserveAmount').value = '';
-  document.getElementById('defectAmount').value = '';
-  document.getElementById('defectQty').value = '';
   document.getElementById('manualMergeAmount').value = '';
   document.getElementById('manualMergeQty').value = '';
-  defectTotal = 0; defectQtyVal = 0;
   manualMergeTotal = 0; manualMergeQtyTotal = 0;
   document.getElementById('mergeStatBlock').style.display = 'none';
   document.getElementById('totalQtyAllBlock').style.display = 'none';
@@ -1205,7 +1187,7 @@ function updateSummary() {
   const totalItems = orders.length;
   const totalQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + (o.qty * o.price), 0));
-  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal - defectTotal;
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal;
   document.getElementById('totalItems').textContent = totalItems;
   document.getElementById('totalQty').textContent = totalQty % 1 === 0 ? totalQty : totalQty.toFixed(1);
   document.getElementById('currentAmount').textContent = '$' + ordersAmount;
@@ -1241,22 +1223,11 @@ function updateSummary() {
   if (badge) {
     const parts = [];
     if (reserveTotal > 0) parts.push('預留金 -$' + reserveTotal);
-    if (defectTotal > 0) parts.push('瑕疵品 -$' + defectTotal);
     if (parts.length > 0) {
       badge.style.display = 'inline';
       badge.textContent = parts.join('  ');
     } else {
       badge.style.display = 'none';
-    }
-  }
-  const defectBlock = document.getElementById('defectStatBlock');
-  if (defectBlock) {
-    if (defectTotal > 0 || defectQtyVal > 0) {
-      defectBlock.style.display = 'block';
-      document.getElementById('defectQtyDisplay').textContent = defectQtyVal + ' 件';
-      document.getElementById('defectDisplay').textContent = '-$' + defectTotal;
-    } else {
-      defectBlock.style.display = 'none';
     }
   }
 }
@@ -1268,8 +1239,7 @@ let manualMergeQtyTotal = 0;  // 手動輸入的上期併單件數
 
 let mergeQtyTotal = 0;
 let reserveTotal = 0;
-let defectTotal = 0;
-let defectQtyVal = 0;
+
 
 function addMergeAmount() {
   const val = parseFloat(document.getElementById('mergeAmount').value) || 0;
@@ -1303,18 +1273,32 @@ function applyReserve() {
   generateExport();
 }
 
-function applyDefect() {
-  defectTotal = parseFloat(document.getElementById('defectAmount').value) || 0;
-  defectQtyVal = parseFloat(document.getElementById('defectQty').value) || 0;
-  updateSummary();
-  generateExport();
-}
 
 function applyManualMerge() {
   manualMergeTotal = parseFloat(document.getElementById('manualMergeAmount').value) || 0;
   manualMergeQtyTotal = parseFloat(document.getElementById('manualMergeQty').value) || 0;
   updateSummary();
   generateExport();
+  // Update 這周件數 display
+  const curQty = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
+  const totalMergeQty = mergeQtyTotal + manualMergeQtyTotal;
+  if (totalMergeQty > 0) {
+    document.getElementById('totalQtyAllBlock').style.display = 'flex';
+    document.getElementById('totalQtyAllDisplay').textContent = (curQty + totalMergeQty) + ' 件';
+  } else {
+    document.getElementById('totalQtyAllBlock').style.display = 'none';
+  }
+  // Update mergeStatBlock for manual merge
+  if (manualMergeTotal > 0 && mergeTotal === 0) {
+    document.getElementById('mergeStatBlock').style.display = 'block';
+    document.getElementById('mergeAmountDisplay').textContent = '$' + manualMergeTotal;
+    if (manualMergeQtyTotal > 0) {
+      document.getElementById('mergeQtyBlock').style.display = 'flex';
+      document.getElementById('mergeQtyDisplay').textContent = manualMergeQtyTotal + ' 件';
+    }
+  } else if (manualMergeTotal === 0 && mergeTotal === 0) {
+    document.getElementById('mergeStatBlock').style.display = 'none';
+  }
 }
 
 // ── Shipping Mode ────────────────────────────────────────────
@@ -1549,7 +1533,7 @@ function generateExport() {
   });
 
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty * o.price, 0));
-  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal - defectTotal;
+  const totalAmount = ordersAmount + mergeTotal + manualMergeTotal - reserveTotal;
   const totalQty    = orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty) || 0), 0);
   const amt60       = totalAmount + 60 * shipCount60;
   const amt80       = totalAmount + 80 * shipCount80;
@@ -1564,6 +1548,10 @@ function generateExport() {
 
   ].filter(Boolean) : [];
   const text = [
+    '匯款完每週六日一出貨',
+    '匯款完畢才能再次訂購商品',
+    '感謝捧場♥️',
+    '',
     '每週結單',
     ...(customerType === 'old' ? [
       `共 ${(mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQtyAll : totalQty} 件`,
@@ -1573,7 +1561,6 @@ function generateExport() {
     ...itemLines,
     ...mergeLines,
     ...(reserveTotal > 0 ? [`（預留金 -$${reserveTotal}）`] : []),
-    ...(defectTotal > 0 ? [`（瑕疵品 ${defectQtyVal > 0 ? defectQtyVal+'件 ' : ''}-$${defectTotal}）`] : []),
     '',
     ...(freeShipping && shippingMode === '超商' ? [`匯款總金額 ＄${totalAmount} 超取免運（滿3000）`] :
         freeShipping && shippingMode === '郵局' ? [`匯款總金額 ＄${totalAmount} 郵寄免運（滿3000）`] :
@@ -1648,8 +1635,6 @@ function clearInput() {
   mergeTotal = 0;
   mergeQtyTotal = 0;
   reserveTotal = 0;
-  defectTotal = 0;
-  defectQtyVal = 0;
   shippingMode = '';
   freeShipping = false;
   shipCount60 = 1;
@@ -1662,8 +1647,6 @@ function clearInput() {
   document.getElementById('mergeAmount').value = '';
   document.getElementById('mergeQty').value = '';
   document.getElementById('reserveAmount').value = '';
-  document.getElementById('defectAmount').value = '';
-  document.getElementById('defectQty').value = '';
 
   // 重新渲染
   renderTable();
@@ -1841,7 +1824,7 @@ function saveCurrentCustomer() {
     date: new Date().toLocaleDateString('zh-TW') + ' ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false}),
     itemCount: orders.length,
     totalQty: orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty)||0), 0),
-    totalAmount: Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty*o.price, 0)) + mergeTotal - reserveTotal - defectTotal,
+    totalAmount: Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty*o.price, 0)) + mergeTotal - reserveTotal,
     exportText,
     orders: JSON.parse(JSON.stringify(orders)),
     mergedFromIds,  // 記錄合併了哪些舊單
