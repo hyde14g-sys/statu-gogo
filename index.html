@@ -2467,10 +2467,10 @@ function addItemRow(preset) {
         </div>
       </div>
       <span id="itemNamePreview_${id}" style="font-size:0.82rem;color:var(--accent);font-weight:700;min-width:60px"></span>
-      <span style="font-size:0.78rem;color:var(--muted)">數量</span>
-      <input id="qty_${id}" class="item-num-input" type="text" inputmode="numeric" placeholder="1" value="${preset?.qty||''}">
       <span style="font-size:0.78rem;color:var(--muted)">單價</span>
       <input id="price_${id}" class="item-num-input" style="width:90px" type="text" inputmode="numeric" placeholder="0" value="${preset?.price||''}">
+      <span style="font-size:0.78rem;color:var(--muted)">數量</span>
+      <input id="qty_${id}" class="item-num-input" type="text" inputmode="numeric" placeholder="1" value="${preset?.qty||''}">
       <span style="font-size:0.78rem;color:var(--accent);font-family:'Space Mono',monospace" id="subtotal_${id}"></span>
       <button onclick="removeItemRow(${id})" style="
         padding:4px 8px;border-radius:5px;border:1px solid #fb7185;
