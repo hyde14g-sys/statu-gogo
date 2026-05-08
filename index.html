@@ -404,14 +404,35 @@
   // 同步 Firestore 資料到 customerDb
   const q = query(collection(db, "customers"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
-    window.customerDb = snapshot.docs.map(d => {
-      const data = { ...d.data(), _docId: d.id };
-      // 自動偵測舊資料：totalAmount <= 0 且未標記 isCreditOrder 的視為預留金單
-      if ((data.totalAmount || 0) <= 0 && !data.isCreditOrder && data.settled) {
-        data.isCreditOrder = true;
+    const allDocs = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id }));
+    
+    // Build credit balance map from Firebase
+    window.creditBalanceMap = {};
+    allDocs.filter(r => r.isCreditBalance).forEach(r => {
+      const existing = window.creditBalanceMap[r.name] || 0;
+      // Keep latest (highest timestamp)
+      if (!window.creditBalanceMap[r.name + '_ts'] || r.timestamp > window.creditBalanceMap[r.name + '_ts']) {
+        window.creditBalanceMap[r.name] = r.creditAmount || 0;
+        window.creditBalanceMap[r.name + '_ts'] = r.timestamp || 0;
       }
-      return data;
     });
+
+    // Filter out credit balance records from main db
+    window.customerDb = allDocs.filter(r => !r.isCreditBalance).map(d => {
+      // 自動偵測舊資料：totalAmount <= 0 且未標記 isCreditOrder 的視為預留金單
+      if ((d.totalAmount || 0) <= 0 && !d.isCreditOrder && d.settled) {
+        d.isCreditOrder = true;
+      }
+      return d;
+    });
+
+    // Sync creditBalanceMap to localStorage
+    Object.keys(window.creditBalanceMap).forEach(k => {
+      if (!k.endsWith('_ts')) {
+        localStorage.setItem('credit_' + k, window.creditBalanceMap[k]);
+      }
+    });
+
     if (typeof renderCustomerDb === 'function') renderCustomerDb();
     if (typeof refreshStats === 'function') refreshStats();
   });
@@ -1479,17 +1500,42 @@ let pendingMergeRecords = [];
 // ── Credit Balance (預留金餘額) ───────────────────────────────
 function getCreditKey(name) { return 'credit_' + name.trim(); }
 
+// 預留金餘額：存 Firebase + localStorage 雙備份
 function saveCreditBalance(name, amount) {
-  // 直接覆蓋，不累加（避免重複儲存時疊加）
   localStorage.setItem(getCreditKey(name), amount);
+  // 存到 Firebase credits collection
+  if (window.saveToFirestore) {
+    window.saveToFirestore({ 
+      id: Date.now(), name: name.trim(),
+      isCreditBalance: true, creditAmount: amount,
+      totalAmount: 0, totalQty: 0, itemCount: 0,
+      orders: [], exportText: '', date: new Date().toLocaleDateString('zh-TW'),
+      timestamp: Date.now()
+    });
+  }
 }
 
 function getCreditBalance(name) {
-  return parseFloat(localStorage.getItem(getCreditKey(name)) || '0');
+  // 優先從 Firebase 讀（由 window.creditBalanceMap 提供）
+  const n = name.trim();
+  if (window.creditBalanceMap && window.creditBalanceMap[n] !== undefined) {
+    return window.creditBalanceMap[n];
+  }
+  return parseFloat(localStorage.getItem(getCreditKey(n)) || '0');
 }
 
 function clearCreditBalance(name) {
-  localStorage.removeItem(getCreditKey(name));
+  const n = name.trim();
+  localStorage.removeItem(getCreditKey(n));
+  if (window.creditBalanceMap) window.creditBalanceMap[n] = 0;
+  // 找到 Firebase 裡的 creditBalance 記錄並刪除
+  const db = window.customerDb || [];
+  const creditRecords = db.filter(r => r.isCreditBalance && r.name === n);
+  creditRecords.forEach(r => {
+    if (window.deleteFromFirestore && r._docId) {
+      window.deleteFromFirestore(r._docId);
+    }
+  });
 }
 
 function useCreditBalance(name, amount) {
