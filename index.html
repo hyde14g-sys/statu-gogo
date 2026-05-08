@@ -404,7 +404,14 @@
   // 同步 Firestore 資料到 customerDb
   const q = query(collection(db, "customers"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
-    window.customerDb = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id }));
+    window.customerDb = snapshot.docs.map(d => {
+      const data = { ...d.data(), _docId: d.id };
+      // 自動偵測舊資料：totalAmount <= 0 且未標記 isCreditOrder 的視為預留金單
+      if ((data.totalAmount || 0) <= 0 && !data.isCreditOrder && data.settled) {
+        data.isCreditOrder = true;
+      }
+      return data;
+    });
     if (typeof renderCustomerDb === 'function') renderCustomerDb();
     if (typeof refreshStats === 'function') refreshStats();
   });
