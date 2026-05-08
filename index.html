@@ -898,15 +898,37 @@
           max-height:300px;overflow-y:auto;margin-bottom:16px"></div>
 
         <!-- 預留金餘額 -->
-        <div id="viewCreditBlock" style="display:none;background:rgba(96,165,250,0.08);border:1px solid #60a5fa;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <div id="viewCreditBlock" style="display:none;background:rgba(96,165,250,0.08);border:1px solid #60a5fa;border-radius:8px;padding:10px 14px;margin-bottom:6px;flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:0.72rem;color:#60a5fa;margin-bottom:2px">💰 預留金餘額</div>
             <div id="viewCreditAmount" style="font-size:1.1rem;font-weight:700;color:#60a5fa;font-family:'Space Mono',monospace">$0</div>
           </div>
-          <button onclick="clearCreditFromView()" style="
-            padding:4px 10px;border-radius:6px;border:1px solid #fb7185;
-            background:transparent;color:#fb7185;font-size:0.75rem;font-weight:700;cursor:pointer;
-            font-family:'Noto Sans TC',sans-serif;">清除餘額</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="editCreditFromView()" style="
+              padding:4px 10px;border-radius:6px;border:1px solid #60a5fa;
+              background:transparent;color:#60a5fa;font-size:0.75rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">✏️ 變更餘額</button>
+            <button onclick="clearCreditFromView()" style="
+              padding:4px 10px;border-radius:6px;border:1px solid #fb7185;
+              background:transparent;color:#fb7185;font-size:0.75rem;font-weight:700;cursor:pointer;
+              font-family:'Noto Sans TC',sans-serif;">清除</button>
+          </div>
+        </div>
+        <!-- Credit edit row -->
+        <div id="creditEditRow" style="display:none;gap:8px;align-items:center;margin-bottom:10px;background:rgba(96,165,250,0.06);border:1px solid #60a5fa;border-radius:8px;padding:10px 14px">
+          <span style="font-size:0.82rem;color:#60a5fa;white-space:nowrap">變更為：</span>
+          <input id="creditEditInput" type="text" inputmode="numeric" placeholder="輸入新金額" style="
+            flex:1;width:120px;background:var(--bg);border:1px solid #60a5fa;border-radius:6px;
+            color:#60a5fa;font-size:1rem;font-weight:700;padding:6px 10px;outline:none;
+            font-family:'Space Mono',monospace;"
+            onkeydown="if(event.key==='Enter') saveCreditEdit()">
+          <button onclick="saveCreditEdit()" style="
+            padding:6px 14px;border-radius:6px;border:1px solid #4ade80;
+            background:rgba(74,222,128,0.15);color:#4ade80;font-size:0.82rem;font-weight:700;cursor:pointer;
+            font-family:'Noto Sans TC',sans-serif;">✔ 確認</button>
+          <button onclick="cancelCreditEdit()" style="
+            padding:6px 10px;border-radius:6px;border:1px solid var(--border);
+            background:transparent;color:var(--muted);font-size:0.82rem;cursor:pointer;">✕</button>
         </div>
         <!-- 客戶資料 -->
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">客戶資料</div>
@@ -1443,17 +1465,8 @@ let pendingMergeRecords = [];
 function getCreditKey(name) { return 'credit_' + name.trim(); }
 
 function saveCreditBalance(name, amount) {
-  const existing = getCreditBalance(name);
-  const newAmt = existing + amount;
-  localStorage.setItem(getCreditKey(name), newAmt);
-  // Also save to Firebase if available
-  if (window.saveToFirestore) {
-    window.saveToFirestore({ 
-      id: Date.now(), name, date: new Date().toLocaleDateString('zh-TW'),
-      isCreditRecord: true, creditAmount: newAmt, totalAmount: 0, totalQty: 0,
-      itemCount: 0, orders: [], exportText: `預留金餘額記錄 $${newAmt}`
-    });
-  }
+  // 直接覆蓋，不累加（避免重複儲存時疊加）
+  localStorage.setItem(getCreditKey(name), amount);
 }
 
 function getCreditBalance(name) {
@@ -1483,7 +1496,7 @@ function checkUnsettledForCustomer(name) {
   if (!name || !name.trim()) { alert.style.display = 'none'; return; }
 
   const db = window.customerDb || [];
-  const unsettled = db.filter(r => r.name === name.trim() && !r.settled && !r.mergedInto);
+  const unsettled = db.filter(r => r.name === name.trim() && !r.settled && !r.mergedInto && (r.totalAmount||0) > 0 && !r.isCreditOrder);
   pendingMergeRecords = unsettled;
 
   // 檢查預留金餘額
@@ -2058,9 +2071,9 @@ function renderCustomerDb(filter = '') {
     const totalOrders = records.length;
     const latestDate = records[0].date;
     // 已結單：settled=true 且非已併入
-    const settledRecords = records.filter(r => r.settled && !r.mergedInto);
+    const settledRecords = records.filter(r => r.settled && !r.mergedInto && !r.isCreditOrder);
     // 未結金額：只算非已併入的未結單（避免重複計算金額）
-    const unsettledAmtRecords = records.filter(r => !r.settled && !r.mergedInto);
+    const unsettledAmtRecords = records.filter(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0);
     // 未結件數：所有未結的都算（含已併入，件數不重複）
     const unsettledQtyRecords = records.filter(r => !r.settled);
 
@@ -2068,11 +2081,12 @@ function renderCustomerDb(filter = '') {
     const unsettledAmt = unsettledAmtRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
     const settledQty = settledRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
     const unsettledQty = unsettledQtyRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
-    const hasUnsettled = records.some(r => !r.settled && !r.mergedInto);
+    const hasUnsettled = records.some(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0);
+    const hasCreditOrders = records.some(r => r.settled && r.isCreditOrder);
     return `
     <div style="border-bottom:1px solid var(--border)">
       <!-- 客戶名稱列 -->
-      <div style="padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--surface2);cursor:pointer;border-left:3px solid ${hasUnsettled ? '#fb7185' : '#f5c542'}"
+      <div style="padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--surface2);cursor:pointer;border-left:3px solid ${hasUnsettled ? '#fb7185' : hasCreditOrders ? '#60a5fa' : '#f5c542'}"
            onclick="toggleCustomerGroup('${name.replace(/'/g,"\\'")}')">
         <div style="flex:1;min-width:120px">
           <div style="display:flex;align-items:center;gap:8px">
@@ -2094,7 +2108,7 @@ function renderCustomerDb(filter = '') {
         ${records.map(r => `
         <div style="padding:10px 16px 10px 28px;border-top:1px dashed var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:rgba(0,0,0,0.1)">
           <div style="flex:1;min-width:120px">
-            <div style="font-size:0.78rem;color:var(--muted)">${r.date}${r.settled ? ' <span style="color:#f5c542">・已結單</span>' : r.mergedInto ? ' <span style="color:#a78bfa">・已併入新單</span>' : ' <span style="color:#fb7185">・未結單</span>'}</div>
+            <div style="font-size:0.78rem;color:var(--muted)">${r.date}${r.settled && r.isCreditOrder ? ' <span style="color:#60a5fa">・預留金單</span>' : r.settled ? ' <span style="color:#f5c542">・已結單</span>' : r.mergedInto ? ' <span style="color:#a78bfa">・已併入新單</span>' : ' <span style="color:#fb7185">・未結單</span>'}</div>
             <div style="font-size:0.82rem;color:var(--text);margin-top:2px">${r.itemCount}品項 ・ ${r.totalQty}件 ・ <span style="color:var(--accent);font-weight:700">$${r.totalAmount}</span></div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -2106,6 +2120,10 @@ function renderCustomerDb(filter = '') {
               <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
                 border:1px solid #a78bfa;background:rgba(167,139,250,0.1);color:#a78bfa;
                 font-family:'Noto Sans TC',sans-serif;">🔗 已併入</span>
+            ` : r.settled && r.isCreditOrder ? `
+              <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
+                border:1px solid #60a5fa;background:rgba(96,165,250,0.15);color:#60a5fa;
+                font-family:'Noto Sans TC',sans-serif;">💰 預留金單 $${Math.abs(r.totalAmount||0)}</span>
             ` : r.settled ? `
               <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
                 border:1px solid #f5c542;background:rgba(245,197,66,0.15);color:#f5c542;
@@ -2113,8 +2131,9 @@ function renderCustomerDb(filter = '') {
             ` : `
               <button onclick="settleOrder(${r.id})" style="
                 padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;
-                border:1px solid #f59e0b;background:transparent;color:#f59e0b;
-                font-family:'Noto Sans TC',sans-serif;">💰 結單</button>
+                border:1px solid ${(r.totalAmount||0) <= 0 ? '#60a5fa' : '#f59e0b'};
+                background:transparent;color:${(r.totalAmount||0) <= 0 ? '#60a5fa' : '#f59e0b'};
+                font-family:'Noto Sans TC',sans-serif;">${(r.totalAmount||0) <= 0 ? '💰 預留金結單' : '💰 結單'}</button>
               <button onclick="deleteCustomerRecord(${r.id})" style="
                 padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;
                 border:1px solid #fb7185;background:transparent;color:#fb7185;
@@ -2176,11 +2195,15 @@ function settleOrder(id) {
   id = Number(id);
   const r = customerDb.find(r => Number(r.id) === id);
   if (!r) return;
-  if (!confirm(`確定將「${r.name}」這筆訂單標記為「已結單完成匯款」？\n標記後將無法刪除。`)) return;
+  const isCreditOrder = (r.totalAmount || 0) <= 0;
+  const msg = isCreditOrder
+    ? `確定將「${r.name}」這筆預留金單標記為完成？\n餘額將繼續保留供下次抵扣。`
+    : `確定將「${r.name}」這筆訂單標記為「已結單完成匯款」？\n標記後將無法刪除。`;
+  if (!confirm(msg)) return;
   r.settled = true;
-  // Update Firestore
+  if (isCreditOrder) r.isCreditOrder = true;
   if (window.updateFirestore && r._docId) {
-    window.updateFirestore(r._docId, { settled: true });
+    window.updateFirestore(r._docId, { settled: true, isCreditOrder: isCreditOrder });
   } else {
     localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
   }
@@ -2203,6 +2226,49 @@ function deleteCustomerRecord(id) {
 window.addEventListener('load', () => { renderCustomerDb(); setTimeout(refreshStats, 500); });
 
 // ── Customer View Modal ──────────────────────────────────────
+function editCreditFromView() {
+  const id = Number(document.getElementById('viewModalId').value);
+  const r = (window.customerDb||[]).find(r => Number(r.id) === id);
+  if (!r) return;
+  const current = getCreditBalance(r.name);
+  // Use a separate edit row
+  const editRow = document.getElementById('creditEditRow');
+  if (editRow) {
+    editRow.style.display = 'flex';
+    document.getElementById('creditEditInput').value = current;
+    document.getElementById('creditEditInput').focus();
+  }
+}
+
+function saveCreditEdit() {
+  try {
+    const input = document.getElementById('creditEditInput');
+    if (!input) { alert('找不到輸入框'); return; }
+    const newAmt = parseFloat(input.value);
+    if (isNaN(newAmt) || newAmt < 0) { alert('請輸入有效的金額'); return; }
+    const id = Number(document.getElementById('viewModalId').value);
+    const db = window.customerDb || window._customerDb || [];
+    const r = db.find(r => Number(r.id) === id);
+    if (!r) { alert('找不到客戶資料，id=' + id); return; }
+    localStorage.setItem(getCreditKey(r.name), newAmt);
+    document.getElementById('creditEditRow').style.display = 'none';
+    if (newAmt > 0) {
+      document.getElementById('viewCreditAmount').textContent = '$' + newAmt;
+      document.getElementById('viewCreditBlock').style.display = 'flex';
+    } else {
+      document.getElementById('viewCreditBlock').style.display = 'none';
+    }
+    renderCustomerDb();
+    alert('✅ 餘額已更新為 $' + newAmt);
+  } catch(e) {
+    alert('錯誤：' + e.message);
+  }
+}
+
+function cancelCreditEdit() {
+  document.getElementById('creditEditRow').style.display = 'none';
+}
+
 function clearCreditFromView() {
   const id = Number(document.getElementById('viewModalId').value);
   const r = (window.customerDb||[]).find(r => Number(r.id) === id);
