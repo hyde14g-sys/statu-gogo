@@ -1563,15 +1563,16 @@ function generateExport() {
     ...mergeLines,
     ...(reserveTotal > 0 ? [`（預留金 -$${reserveTotal}）`] : []),
     '',
-    ...(freeShipping && shippingMode === '超商' ? [`＄${totalAmount} 超取免運`, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
-        freeShipping && shippingMode === '郵局' ? [`＄${totalAmount} 郵寄免運`, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
-        shippingMode === '超商' ? [`＄${totalAmount} +${shipFee60}超取`, `▶▶ 匯款總金額 ＄${amt60} ◀◀`] :
-        shippingMode === '郵局' ? [`＄${totalAmount} +${shipFee80}郵寄`, `▶▶ 匯款總金額 ＄${amt80} ◀◀`] :
-        [`＄${totalAmount} +${shipFee60}超取`, `▶▶ 匯款總金額 ＄${amt60} ◀◀`, `＄${totalAmount} +${shipFee80}郵寄`, `▶▶ 匯款總金額 ＄${amt80} ◀◀`]),
+    ...(freeShipping && shippingMode === '超商' ? [`超取免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
+        freeShipping && shippingMode === '郵局' ? [`郵寄免運`, ``, `▶▶ 匯款總金額 ＄${totalAmount} ◀◀`] :
+        shippingMode === '超商' ? [`+${shipFee60}超取`, ``, `▶▶ 匯款總金額 ＄${amt60} ◀◀`] :
+        shippingMode === '郵局' ? [`+${shipFee80}郵寄`, ``, `▶▶ 匯款總金額 ＄${amt80} ◀◀`] :
+        [`+${shipFee60}超取`, ``, `▶▶ 匯款總金額 ＄${amt60} ◀◀`, `+${shipFee80}郵寄`, ``, `▶▶ 匯款總金額 ＄${amt80} ◀◀`]),
     '',
     '（匯款完如要放貨合併請告知）',
     '—————————————',
-    (profiles[activeProfile].bankName + ' 帳號' + profiles[activeProfile].accNum),
+    profiles[activeProfile].bankName,
+    '帳號' + profiles[activeProfile].accNum,
     '戶名 ' + profiles[activeProfile].holderName,
     '—————————————',
     '匯款完成 『幫我拍匯款明細』',
