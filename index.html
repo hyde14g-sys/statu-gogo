@@ -1403,6 +1403,10 @@ function mergeUnsettled() {
   // 件數：自身件數 + 已記錄的上期件數，不遞迴（避免重複計算）
   const totalQtyVal = pendingMergeRecords.reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0), 0);
 
+  // 先重置，避免累加舊值
+  mergeTotal = 0;
+  mergeQtyTotal = 0;
+
   // Fill merge fields
   document.getElementById('mergeAmount').value = totalAmt;
   document.getElementById('mergeQty').value = totalQtyVal;
