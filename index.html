@@ -429,49 +429,12 @@
 </head>
 <body>
 
-<!-- Firebase 倒數計時 -->
-<div id="firebaseCountdown" style="
-  position:fixed;top:12px;right:12px;z-index:9999;
-  background:rgba(26,26,34,0.95);
-  border:1px solid #f59e0b;
-  border-radius:10px;padding:6px 12px;
-  font-family:'Space Mono',monospace;
-  font-size:0.75rem;text-align:center;
-  box-shadow:0 0 12px rgba(245,158,11,0.3);
-  cursor:pointer;" onclick="showFirebaseInfo()">
-  <div style="color:#f59e0b;font-size:0.65rem;margin-bottom:2px">🔥 Firebase 測試模式</div>
-  <div id="countdownText" style="color:#ffffff;font-weight:700"></div>
-</div>
-
-<!-- Firebase Info Modal -->
-<div id="firebaseInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10001;align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--surface);border:2px solid #f59e0b;border-radius:14px;width:100%;max-width:380px;overflow:hidden">
-    <div style="background:rgba(245,158,11,0.1);padding:20px;text-align:center">
-      <div style="font-size:2rem;margin-bottom:8px">🔥</div>
-      <div style="font-weight:700;color:#f59e0b;font-size:1rem">Firebase 測試模式倒數</div>
-      <div id="firebaseInfoDays" style="font-size:2rem;font-weight:900;color:#ffffff;font-family:'Space Mono',monospace;margin:10px 0"></div>
-      <div style="color:var(--muted);font-size:0.82rem">到期日：2026/6/7</div>
-    </div>
-    <div style="padding:16px;font-size:0.82rem;color:var(--muted);line-height:1.8">
-      ⚠️ 測試模式到期後資料庫將無法讀寫<br>
-      到期前請聯絡 Claude 協助設定安全規則<br>
-      <span style="color:#39ff14">設定完成後即可永久免費使用</span>
-    </div>
-    <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:right">
-      <button onclick="document.getElementById('firebaseInfoModal').style.display='none'" style="
-        padding:6px 16px;border-radius:8px;border:1px solid var(--border);
-        background:var(--surface2);color:var(--text);font-size:0.82rem;
-        cursor:pointer;font-family:'Noto Sans TC',sans-serif;">關閉</button>
-    </div>
-  </div>
-</div>
-
 <div class="header">
   <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
     <img src="data:image/jpeg;base64,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" alt="史塔兔" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);box-shadow:0 0 16px rgba(245,197,66,0.4)">
     <h1>史塔兔 GOGO STAR 2</h1>
   </div>
-  <p style="color:#39ff14;text-shadow:0 0 8px #39ff14;">輕輕鬆鬆算訂單 老婆辛苦了</p>
+  <p id="dailyQuote" style="color:#39ff14;text-shadow:0 0 8px #39ff14;">輕輕鬆鬆算訂單 老婆辛苦了</p>
 </div>
 
 <div class="layout">
@@ -2224,37 +2187,6 @@ document.getElementById('customerViewModal').addEventListener('click', function(
   if (e.target === this) this.style.display = 'none';
 });
 
-// ── Firebase Countdown ───────────────────────────────────────
-function updateFirebaseCountdown() {
-  const expiry = new Date('2026-06-07T00:00:00');
-  const now = new Date();
-  const diff = expiry - now;
-  if (diff <= 0) {
-    document.getElementById('countdownText').textContent = '已到期！';
-    document.getElementById('countdownText').style.color = '#fb7185';
-    document.getElementById('firebaseCountdown').style.borderColor = '#fb7185';
-    return;
-  }
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  document.getElementById('countdownText').textContent = `${days}天 ${hours}時 ${mins}分`;
-  document.getElementById('firebaseInfoDays').textContent = `剩餘 ${days} 天`;
-  // 顏色警示
-  if (days <= 7) {
-    document.getElementById('firebaseCountdown').style.borderColor = '#fb7185';
-    document.getElementById('firebaseCountdown').style.boxShadow = '0 0 12px rgba(251,113,133,0.5)';
-  } else if (days <= 14) {
-    document.getElementById('firebaseCountdown').style.borderColor = '#fb923c';
-  }
-}
-
-function showFirebaseInfo() {
-  document.getElementById('firebaseInfoModal').style.display = 'flex';
-}
-
-updateFirebaseCountdown();
-setInterval(updateFirebaseCountdown, 60000); // 每分鐘更新
 
 // ── Statistics ───────────────────────────────────────────────
 let currentPeriod = 'weekly';
@@ -3002,6 +2934,58 @@ function renderAvgChart(mode) {
   ctx.lineTo(pad.left + cW, pad.top + cH);
   ctx.stroke();
 }
+
+// ── Daily Quote ──────────────────────────────────────────────
+const dailyQuotes = [
+  '每一件衣服都是一個故事的開始 👗',
+  '辛苦的背後是滿滿的成就感 ✨',
+  '今天的努力是明天幸福的種子 🌱',
+  '老婆最美，加油！ 💪',
+  '用心做好每一件事，幸福自然來 🌸',
+  '每一位客人的微笑都是最好的回報 😊',
+  '小店用心經營，大夢慢慢實現 🌟',
+  '今天也要閃閃發光喔！ ⭐',
+  '累了就休息，但別忘了你有多棒 💗',
+  '每一筆訂單都是一份信任 🤝',
+  '把熱情放進每一件衣服裡 👕',
+  '溫柔待人，溫柔待己 🌷',
+  '你的努力，家人都看在眼裡 ❤️',
+  '今天也是充滿可能的一天 🌈',
+  '幸福不遠，就在每一個用心的瞬間 💫',
+  '每一天都是新的開始，加油！ 🌅',
+  '謝謝你每天這麼認真 💝',
+  '小小的堅持，成就大大的夢想 🦋',
+  '今天的妳，依然是最厲害的 👑',
+  '客人的喜悅，是最美的風景 🌺',
+  '努力不一定馬上看到結果，但一定不會白費 🌻',
+  '把愛融入工作，工作就是享受 💖',
+  '再忙也要記得照顧自己 🫶',
+  '每一個細節都是你用心的證明 🎀',
+  '好的事情正在路上，請耐心等待 🌙',
+  '你的笑容是最好的招牌 😄',
+  '辛苦了，今天也謝謝你 🙏',
+  '每件衣服出門前，都帶著你的心意 💌',
+  '堅持下去，花會開的 🌼',
+  '今天辛苦，明天的你會感謝自己 🌟',
+  '小店有溫度，才是最美的樣子 🏠',
+  '每一個訂單背後，都有一個期待的心 💕',
+  '你做的每件事，都有意義 🌿',
+  '時間會證明你的努力沒有白費 ⏳',
+  '把快樂傳遞給每一位客人 🎁',
+  '最美的風景，是你努力的樣子 📸',
+  '記得多喝水，照顧好自己 💧',
+  '今天也是幸福的一天 🍀',
+  '感謝每一位相信你的客人 🌠',
+  '老婆辛苦了，你是最棒的！ 🥰',
+];
+
+window.addEventListener('load', () => {
+  const el = document.getElementById('dailyQuote');
+  if (el) {
+    const q = dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)];
+    el.textContent = q;
+  }
+});
 
 // ── Typing Demo ──────────────────────────────────────────────
 const demoLines = [
