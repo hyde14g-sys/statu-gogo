@@ -1556,6 +1556,8 @@ function generateExport() {
     ...(customerType === 'old' ? [
       `共 ${(mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQtyAll : totalQty} 件`,
       `這周新的訂單件數 ${totalQty} 件`,
+      ...(manualMergeTotal > 0 ? [`（上期併單金額 $${manualMergeTotal}）`] : []),
+      ...(manualMergeQtyTotal > 0 ? [`（上期併單件數 ${manualMergeQtyTotal} 件）`] : []),
     ] : []),
     '',
     ...itemLines,
