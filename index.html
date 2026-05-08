@@ -827,6 +827,43 @@
   </div>
 
 
+  <!-- REVENUE CHART MODAL -->
+  <div id="revenueChartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10003;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border:2px solid #4ade80;border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+      <!-- Header -->
+      <div style="background:var(--surface2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-weight:700;font-size:1rem" id="chartModalTitle">📈 營業額圖表</span>
+        <button onclick="document.getElementById('revenueChartModal').style.display='none'" style="
+          padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;">✕ 關閉</button>
+      </div>
+      <!-- Mode buttons -->
+      <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+        <button id="chartBtnDaily" onclick="callCurrentChart('daily')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每天</button>
+        <button id="chartBtnWeekly" onclick="callCurrentChart('weekly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid #4ade80;
+          background:rgba(74,222,128,0.15);color:#4ade80;font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每週</button>
+        <button id="chartBtnMonthly" onclick="callCurrentChart('monthly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每月</button>
+        <button id="chartBtnYearly" onclick="callCurrentChart('yearly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每年</button>
+      </div>
+      <!-- Chart area -->
+      <div style="padding:16px;overflow-y:auto;flex:1">
+        <canvas id="revenueCanvas" style="width:100%;max-height:380px"></canvas>
+        <div id="chartNoData" style="display:none;text-align:center;padding:40px;color:var(--muted)">尚無資料</div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIRM DELETE MODAL -->
   <div id="confirmDeleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--surface);border:2px solid #fb7185;border-radius:14px;width:100%;max-width:320px;overflow:hidden">
@@ -947,8 +984,20 @@
           <div id="statTotalOrders" style="font-size:1.6rem;font-weight:900;color:#a78bfa;font-family:'Space Mono',monospace">0</div>
         </div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
-          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總營業額</div>
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總件數</div>
+          <div id="statTotalQty" style="font-size:1.6rem;font-weight:900;color:#f472b6;font-family:'Space Mono',monospace">0</div>
+        </div>
+        <div onclick="openAvgChart()" style="background:var(--surface2);border:1px solid #fb923c;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all 0.15s;box-shadow:0 0 10px rgba(251,146,60,0.15)"
+          onmouseover="this.style.background='rgba(251,146,60,0.08)'" onmouseout="this.style.background='var(--surface2)'">
+          <div style="font-size:0.72rem;color:#fb923c;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">平均單件金額 📊</div>
+          <div id="statAvgPrice" style="font-size:1.6rem;font-weight:900;color:#fb923c;font-family:'Space Mono',monospace">$0</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">點擊查看圖表</div>
+        </div>
+        <div onclick="openRevenueChart()" style="background:var(--surface2);border:1px solid #4ade80;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all 0.15s;box-shadow:0 0 10px rgba(74,222,128,0.15)"
+          onmouseover="this.style.background='rgba(74,222,128,0.08)'" onmouseout="this.style.background='var(--surface2)'">
+          <div style="font-size:0.72rem;color:#4ade80;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">總營業額 📈</div>
           <div id="statTotalRevenue" style="font-size:1.6rem;font-weight:900;color:#4ade80;font-family:'Space Mono',monospace">$0</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">點擊查看圖表</div>
         </div>
       </div>
 
@@ -2242,8 +2291,15 @@ function refreshStats() {
   // 總覽
   const names = [...new Set(db.map(r => r.name))];
   const totalRevenue = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalAmount || 0), 0);
+  // 總件數：只算非已併入的訂單（避免重複計算）
+  const totalQtyAll = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0) + (r.manualMergeQtyTotal || 0), 0);
+  // 平均單件金額
+  const avgPrice = totalQtyAll > 0 ? Math.round(totalRevenue / totalQtyAll) : 0;
+
   document.getElementById('statTotalCustomers').textContent = names.length;
   document.getElementById('statTotalOrders').textContent = db.length; // 含已併入
+  document.getElementById('statTotalQty').textContent = totalQtyAll;
+  document.getElementById('statAvgPrice').textContent = '$' + avgPrice.toLocaleString();
   document.getElementById('statTotalRevenue').textContent = '$' + totalRevenue.toLocaleString();
 
   // 週/月統計
@@ -2336,7 +2392,7 @@ function showPeriod(type) {
   }
 
   const periodMap = {};
-  const getKey = r => type === 'weekly' ? getWeekKey(r.date) : type === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
+  const getKey = r => type === 'daily' ? getDayKey(r.date) : type === 'weekly' ? getWeekKey(r.date) : type === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
 
   // 訂單數：所有單都算（含已併入）
   db.forEach(r => {
@@ -2352,7 +2408,7 @@ function showPeriod(type) {
   });
 
   const rows = Object.entries(periodMap).sort((a,b) => b[0].localeCompare(a[0]));
-  const label = type === 'weekly' ? '週起始（週二）' : type === 'monthly' ? '月份' : '年份';
+  const label = type === 'daily' ? '日期' : type === 'weekly' ? '週起始（週二）' : type === 'monthly' ? '月份' : '年份';
   const totalAmt = rows.reduce((s, [,v]) => s + v.amount, 0);
   const totalOrd = rows.reduce((s, [,v]) => s + v.orders, 0);
 
@@ -2657,6 +2713,295 @@ function togglePasteArea() {
 window.addEventListener('load', () => {
   addItemRow();
 });
+
+// ── Revenue Chart ────────────────────────────────────────────
+let currentChartMode = 'weekly';
+
+let currentChartType = 'revenue'; // 'revenue' or 'avg'
+
+function openRevenueChart() {
+  currentChartType = 'revenue';
+  currentChartMode = 'weekly';
+  document.getElementById('chartModalTitle').textContent = '📈 營業額圖表';
+  document.getElementById('chartModalTitle').style.color = '#4ade80';
+  document.getElementById('revenueChartModal').style.display = 'flex';
+  callCurrentChart('weekly');
+}
+
+function openAvgChart() {
+  currentChartType = 'avg';
+  currentChartMode = 'daily';
+  document.getElementById('chartModalTitle').textContent = '📊 平均單件金額圖表';
+  document.getElementById('chartModalTitle').style.color = '#fb923c';
+  document.getElementById('revenueChartModal').style.display = 'flex';
+  callCurrentChart('daily');
+}
+
+function callCurrentChart(mode) {
+  currentChartMode = mode;
+  if (currentChartType === 'revenue') renderChart(mode);
+  else renderAvgChart(mode);
+}
+
+function renderChart(mode) {
+  currentChartMode = mode;
+  // Update buttons
+  const activeColor = currentChartType === 'avg' ? '#fb923c' : '#4ade80';
+  const activeBg = currentChartType === 'avg' ? 'rgba(251,146,60,0.15)' : 'rgba(74,222,128,0.15)';
+  ['daily','weekly','monthly','yearly'].forEach(m => {
+    const btn = document.getElementById('chartBtn' + m.charAt(0).toUpperCase() + m.slice(1));
+    if (!btn) return;
+    if (m === mode) {
+      btn.style.background = activeBg; btn.style.color = activeColor; btn.style.borderColor = activeColor;
+    } else {
+      btn.style.background = 'transparent'; btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)';
+    }
+  });
+
+  const db = window.customerDb || [];
+  const periodMap = {};
+  const getKey = r => mode === 'weekly' ? getWeekKey(r.date) : mode === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
+
+  db.filter(r => !r.mergedInto).forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = 0;
+    periodMap[key] += (r.totalAmount || 0);
+  });
+
+  const rows = Object.entries(periodMap).sort((a,b) => a[0].localeCompare(b[0]));
+  const canvas = document.getElementById('revenueCanvas');
+  const noData = document.getElementById('chartNoData');
+
+  if (rows.length === 0) {
+    canvas.style.display = 'none';
+    noData.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  noData.style.display = 'none';
+
+  const labels = rows.map(([k]) => k);
+  const values = rows.map(([,v]) => v);
+  const maxVal = Math.max(...values);
+
+  // Set canvas size
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = Math.min(350, Math.max(200, W * 0.5));
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 20, right: 20, bottom: 60, left: 70 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.top + (cH / gridLines) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    // Y labels
+    const val = Math.round(maxVal * (1 - i / gridLines));
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `${11 * dpr / dpr}px Space Mono, monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + val.toLocaleString(), pad.left - 8, y + 4);
+  }
+
+  if (rows.length === 1) {
+    // Single bar
+    const bx = pad.left + cW / 2 - 20;
+    const bh = maxVal > 0 ? (values[0] / maxVal) * cH : cH * 0.5;
+    const by = pad.top + cH - bh;
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(bx, by, 40, bh);
+    ctx.fillStyle = '#4ade80';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[0], bx + 20, H - pad.bottom + 16);
+    ctx.fillStyle = 'white';
+    ctx.fillText('$' + values[0].toLocaleString(), bx + 20, by - 6);
+    return;
+  }
+
+  // Draw bars
+  const barW = Math.max(8, Math.min(40, cW / rows.length - 4));
+  const step = cW / rows.length;
+
+  rows.forEach(([label, val], i) => {
+    const x = pad.left + step * i + step / 2 - barW / 2;
+    const bh = maxVal > 0 ? (val / maxVal) * cH : 0;
+    const by = pad.top + cH - bh;
+
+    // Bar gradient
+    const grad = ctx.createLinearGradient(0, by, 0, pad.top + cH);
+    grad.addColorStop(0, '#4ade80');
+    grad.addColorStop(1, 'rgba(74,222,128,0.3)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, by, barW, bh, [3,3,0,0]) : ctx.rect(x, by, barW, bh);
+    ctx.fill();
+
+    // Value on top
+    if (bh > 20) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px Space Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('$' + (val >= 1000 ? (val/1000).toFixed(1)+'k' : val), x + barW/2, by - 4);
+    }
+
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Noto Sans TC, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(x + barW/2, H - pad.bottom + 10);
+    if (rows.length > 8) {
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'right';
+    }
+    ctx.fillText(label.replace('年','').replace('2026/',''), 0, 0);
+    ctx.restore();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + cH);
+  ctx.lineTo(pad.left + cW, pad.top + cH);
+  ctx.stroke();
+}
+
+// ── Avg Price Chart ──────────────────────────────────────────
+function getDayKey(dateStr) {
+  return dateStr.split(' ')[0]; // YYYY/M/D
+}
+
+function renderAvgChart(mode) {
+  const db = window.customerDb || [];
+  const periodMap = {};
+  const getKey = r => {
+    if (mode === 'daily') return getDayKey(r.date);
+    if (mode === 'weekly') return getWeekKey(r.date);
+    if (mode === 'monthly') return getMonthKey(r.date);
+    return getYearKey(r.date);
+  };
+
+  db.filter(r => !r.mergedInto).forEach(r => {
+    const key = getKey(r);
+    if (!periodMap[key]) periodMap[key] = { amount: 0, qty: 0 };
+    periodMap[key].amount += (r.totalAmount || 0);
+    periodMap[key].qty += (r.totalQty || 0) + (r.mergeQtyTotal || 0) + (r.manualMergeQtyTotal || 0);
+  });
+
+  const rows = Object.entries(periodMap)
+    .map(([k, v]) => [k, v.qty > 0 ? Math.round(v.amount / v.qty) : 0])
+    .sort((a,b) => a[0].localeCompare(b[0]));
+
+  const canvas = document.getElementById('revenueCanvas');
+  const noData = document.getElementById('chartNoData');
+
+  if (rows.length === 0) {
+    canvas.style.display = 'none'; noData.style.display = 'block'; return;
+  }
+  canvas.style.display = 'block'; noData.style.display = 'none';
+
+  const labels = rows.map(([k]) => k);
+  const values = rows.map(([,v]) => v);
+  const maxVal = Math.max(...values);
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = Math.min(350, Math.max(200, W * 0.5));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 20, right: 20, bottom: 60, left: 70 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + (cH / 5) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    const val = Math.round(maxVal * (1 - i / 5));
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px Space Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + val.toLocaleString(), pad.left - 8, y + 4);
+  }
+
+  // Line chart
+  const step = rows.length > 1 ? cW / (rows.length - 1) : cW / 2;
+  const pts = values.map((v, i) => ({
+    x: pad.left + (rows.length > 1 ? step * i : cW / 2),
+    y: pad.top + cH - (maxVal > 0 ? (v / maxVal) * cH : 0)
+  }));
+
+  // Area fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+  grad.addColorStop(0, 'rgba(251,146,60,0.3)');
+  grad.addColorStop(1, 'rgba(251,146,60,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pad.top + cH);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, pad.top + cH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#fb923c';
+  ctx.lineWidth = 2.5;
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+
+  // Dots + labels
+  pts.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fb923c';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = '10px Space Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('$' + values[i].toLocaleString(), p.x, p.y - 10);
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Noto Sans TC, sans-serif';
+    ctx.save();
+    ctx.translate(p.x, H - pad.bottom + 10);
+    if (rows.length > 8) { ctx.rotate(-Math.PI / 4); ctx.textAlign = 'right'; }
+    ctx.fillText(labels[i].replace('年','').replace('2026/',''), 0, 0);
+    ctx.restore();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + cH);
+  ctx.lineTo(pad.left + cW, pad.top + cH);
+  ctx.stroke();
+}
 
 // ── Typing Demo ──────────────────────────────────────────────
 const demoLines = [
