@@ -1554,7 +1554,7 @@ function generateExport() {
     if (o.outOfStock) return `${o.name} ×${o.qty}（缺貨）`;
     const sub = Math.round(o.qty * o.price);
     const noteStr = o.note ? ` 【${o.note}】` : '';
-    return `${o.name} $${o.price} ${o.qty}件 ＝ $${sub}${noteStr}`;
+    return `${o.name} $${o.price} x ${o.qty}件 ＝ $${sub}${noteStr}`;
   });
 
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty * o.price, 0));
