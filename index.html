@@ -2100,8 +2100,10 @@ function renderCustomerDb(filter = '') {
     const unsettledAmt = unsettledAmtRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
     const settledQty = settledRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
     const unsettledQty = unsettledQtyRecords.reduce((s, r) => s + (r.totalQty || 0), 0);
-    const hasUnsettled = records.some(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0);
+    // 未結單：包含 $0 的預留金待結單（還沒按結單的都算未結）
+    const hasUnsettled = records.some(r => !r.settled && !r.mergedInto);
     const hasCreditOrders = records.some(r => r.settled && r.isCreditOrder);
+    const creditBalance = getCreditBalance(records[0]?.name || '');
     return `
     <div style="border-bottom:1px solid var(--border)">
       <!-- 客戶名稱列 -->
@@ -2112,6 +2114,7 @@ function renderCustomerDb(filter = '') {
             <span style="font-weight:700;color:var(--text);font-size:0.9rem">👤 ${name}</span>
             ${getCreditBalance(name) > 0 ? `<span style="font-size:0.72rem;padding:1px 7px;border-radius:4px;background:rgba(96,165,250,0.15);color:#60a5fa;font-weight:700">💰 預留 $${getCreditBalance(name)}</span>` : ''}
             ${hasUnsettled ? '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(251,113,133,0.2);color:#fb7185;font-weight:700">未結單</span>' : '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(245,197,66,0.15);color:#f5c542;font-weight:700">已結單</span>'}
+            ${creditBalance > 0 ? `<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(96,165,250,0.15);color:#60a5fa;font-weight:700">💰 預留 $${creditBalance}</span>` : ''}
           </div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:6px">
             <span>共 ${totalOrders} 筆</span>
