@@ -952,8 +952,8 @@
         </div>
       </div>
 
-      <!-- 週/月 切換 -->
-      <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center">
+      <!-- 週/月/年 切換 + 篩選 -->
+      <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button id="btnWeekly" onclick="showPeriod('weekly')" style="
           padding:5px 14px;border-radius:6px;border:1px solid #f59e0b;
           background:rgba(245,158,11,0.15);color:#f59e0b;font-size:0.8rem;font-weight:700;
@@ -962,6 +962,32 @@
           padding:5px 14px;border-radius:6px;border:1px solid var(--border);
           background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
           cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每月營業額</button>
+        <button id="btnYearly" onclick="showPeriod('yearly')" style="
+          padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.8rem;font-weight:700;
+          cursor:pointer;font-family:'Noto Sans TC',sans-serif;">每年營業額</button>
+      </div>
+
+      <!-- 篩選列 -->
+      <div style="padding:0 14px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color:var(--muted)">篩選年份：</span>
+        <select id="filterYear" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;cursor:pointer;">
+          <option value="">全部</option>
+        </select>
+        <span style="font-size:0.78rem;color:var(--muted);margin-left:8px">日期範圍：</span>
+        <input type="date" id="dateFrom" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;">
+        <span style="font-size:0.78rem;color:var(--muted)">至</span>
+        <input type="date" id="dateTo" onchange="showPeriod(currentPeriod)" style="
+          background:var(--bg);border:1px solid var(--border);border-radius:6px;
+          color:var(--text);font-size:0.82rem;padding:5px 8px;outline:none;">
+        <button onclick="clearDateFilter()" style="
+          padding:5px 10px;border-radius:6px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;
+          font-family:'Noto Sans TC',sans-serif;">清除</button>
       </div>
       <div id="periodTable" style="padding:0 14px 14px;overflow-x:auto"></div>
 
@@ -1528,7 +1554,7 @@ function generateExport() {
     if (o.outOfStock) return `${o.name} ×${o.qty}（缺貨）`;
     const sub = Math.round(o.qty * o.price);
     const noteStr = o.note ? ` 【${o.note}】` : '';
-    return `${o.name} ${o.qty}件 $${o.price} ＝ $${sub}${noteStr}`;
+    return `${o.name} $${o.price} ${o.qty}件 ＝ $${sub}${noteStr}`;
   });
 
   const ordersAmount = Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty * o.price, 0));
@@ -2256,40 +2282,83 @@ function refreshStats() {
   `).join('');
 }
 
+function getYearKey(dateStr) {
+  const d = new Date(dateStr.split(' ')[0]);
+  return `${d.getFullYear()}年`;
+}
+
+function clearDateFilter() {
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  showPeriod(currentPeriod);
+}
+
+function updateYearFilter(db) {
+  const sel = document.getElementById('filterYear');
+  if (!sel) return;
+  const years = [...new Set(db.map(r => new Date(r.date.split(' ')[0]).getFullYear()))].sort((a,b) => b-a);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部</option>' + years.map(y => `<option value="${y}" ${String(y)===cur?'selected':''}>${y}年</option>`).join('');
+}
+
+function filterDbByDateRange(db) {
+  const yearVal = document.getElementById('filterYear')?.value || '';
+  const fromVal = document.getElementById('dateFrom')?.value || '';
+  const toVal = document.getElementById('dateTo')?.value || '';
+  return db.filter(r => {
+    const dateStr = r.date.split(' ')[0];
+    const d = new Date(dateStr);
+    if (yearVal && String(d.getFullYear()) !== yearVal) return false;
+    if (fromVal && dateStr < fromVal) return false;
+    if (toVal && dateStr > toVal) return false;
+    return true;
+  });
+}
+
 function showPeriod(type) {
   currentPeriod = type;
-  const db = window.customerDb || [];
+  const allDb = window.customerDb || [];
+  updateYearFilter(allDb);
+  const db = filterDbByDateRange(allDb);
 
   // Update button styles
   const bw = document.getElementById('btnWeekly');
   const bm = document.getElementById('btnMonthly');
-  if (type === 'weekly') {
-    bw.style.background = 'rgba(245,158,11,0.15)'; bw.style.color = '#f59e0b'; bw.style.borderColor = '#f59e0b';
-    bm.style.background = 'transparent'; bm.style.color = 'var(--muted)'; bm.style.borderColor = 'var(--border)';
-  } else {
-    bm.style.background = 'rgba(245,158,11,0.15)'; bm.style.color = '#f59e0b'; bm.style.borderColor = '#f59e0b';
-    bw.style.background = 'transparent'; bw.style.color = 'var(--muted)'; bw.style.borderColor = 'var(--border)';
+  const by = document.getElementById('btnYearly');
+  [bw, bm, by].forEach(b => {
+    if (b) { b.style.background = 'transparent'; b.style.color = 'var(--muted)'; b.style.borderColor = 'var(--border)'; }
+  });
+  const activeBtn = type === 'weekly' ? bw : type === 'monthly' ? bm : by;
+  if (activeBtn) {
+    activeBtn.style.background = 'rgba(245,158,11,0.15)';
+    activeBtn.style.color = '#f59e0b';
+    activeBtn.style.borderColor = '#f59e0b';
   }
 
   const periodMap = {};
+  const getKey = r => type === 'weekly' ? getWeekKey(r.date) : type === 'monthly' ? getMonthKey(r.date) : getYearKey(r.date);
+
   // 訂單數：所有單都算（含已併入）
   db.forEach(r => {
-    const key = type === 'weekly' ? getWeekKey(r.date) : getMonthKey(r.date);
+    const key = getKey(r);
     if (!periodMap[key]) periodMap[key] = { orders: 0, amount: 0 };
     periodMap[key].orders++;
   });
   // 金額：只算非已併入的單
   db.filter(r => !r.mergedInto).forEach(r => {
-    const key = type === 'weekly' ? getWeekKey(r.date) : getMonthKey(r.date);
+    const key = getKey(r);
     if (!periodMap[key]) periodMap[key] = { orders: 0, amount: 0 };
     periodMap[key].amount += (r.totalAmount || 0);
   });
 
   const rows = Object.entries(periodMap).sort((a,b) => b[0].localeCompare(a[0]));
-  const label = type === 'weekly' ? '週起始（週二）' : '月份';
+  const label = type === 'weekly' ? '週起始（週二）' : type === 'monthly' ? '月份' : '年份';
+  const totalAmt = rows.reduce((s, [,v]) => s + v.amount, 0);
+  const totalOrd = rows.reduce((s, [,v]) => s + v.orders, 0);
 
-  document.getElementById('periodTable').innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
+  document.getElementById('periodTable').innerHTML = rows.length === 0 ?
+    '<div style="text-align:center;padding:20px;color:var(--muted)">此範圍無資料</div>' :
+    `<table style="width:100%;border-collapse:collapse;font-size:0.83rem">
       <thead>
         <tr style="background:var(--surface2)">
           <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase">${label}</th>
@@ -2304,9 +2373,13 @@ function showPeriod(type) {
           <td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:'Space Mono',monospace;font-weight:700">${v.orders}</td>
           <td style="padding:8px 10px;text-align:right;color:#4ade80;font-family:'Space Mono',monospace;font-weight:700">$${v.amount.toLocaleString()}</td>
         </tr>`).join('')}
+        <tr style="background:var(--surface2);font-weight:700">
+          <td style="padding:8px 10px;color:var(--accent)">合計</td>
+          <td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:'Space Mono',monospace">${totalOrd}</td>
+          <td style="padding:8px 10px;text-align:right;color:#4ade80;font-family:'Space Mono',monospace">$${totalAmt.toLocaleString()}</td>
+        </tr>
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
 
 // ── Item Row UI ──────────────────────────────────────────────
