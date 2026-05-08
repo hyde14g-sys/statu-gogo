@@ -679,7 +679,7 @@
             <button id="btnFree60" onclick="setFreeShipping('超商')" style="
               padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
               border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
-              transition:all 0.15s">滿3000免運</button>
+              transition:all 0.15s">免運</button>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <button onclick="changeShipCount('超商',-1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #fb923c;background:transparent;color:#fb923c;font-size:0.9rem;cursor:pointer;line-height:1">▼</button>
@@ -698,7 +698,7 @@
             <button id="btnFree80" onclick="setFreeShipping('郵局')" style="
               padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;cursor:pointer;
               border:1px solid #39ff14;background:transparent;color:#39ff14;font-family:'Noto Sans TC',sans-serif;
-              transition:all 0.15s">滿3000免運</button>
+              transition:all 0.15s">免運</button>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <button onclick="changeShipCount('郵局',-1)" style="width:22px;height:22px;border-radius:4px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;font-size:0.9rem;cursor:pointer;line-height:1">▼</button>
@@ -1475,13 +1475,13 @@ function updateFreeShippingBtns() {
   const btn80 = document.getElementById('btnFree80');
   if (shippingMode === '超商' && freeShipping) {
     btn60.style.background = '#39ff14'; btn60.style.color = '#111'; btn60.textContent = '✔ 免運';
-    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '滿3000免運';
+    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '免運';
   } else if (shippingMode === '郵局' && freeShipping) {
     btn80.style.background = '#39ff14'; btn80.style.color = '#111'; btn80.textContent = '✔ 免運';
-    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '滿3000免運';
+    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '免運';
   } else {
-    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '滿3000免運';
-    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '滿3000免運';
+    btn60.style.background = 'transparent'; btn60.style.color = '#39ff14'; btn60.textContent = '免運';
+    btn80.style.background = 'transparent'; btn80.style.color = '#39ff14'; btn80.textContent = '免運';
   }
 }
 
@@ -1556,16 +1556,16 @@ function generateExport() {
     ...(customerType === 'old' ? [
       `共 ${(mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQtyAll : totalQty} 件`,
       `這周新的訂單件數 ${totalQty} 件`,
-      ...(manualMergeTotal > 0 ? [`（上期併單金額 $${manualMergeTotal}）`] : []),
-      ...(manualMergeQtyTotal > 0 ? [`（上期併單件數 ${manualMergeQtyTotal} 件）`] : []),
+      ...(manualMergeTotal > 0 ? [`（前期金額 $${manualMergeTotal}）`] : []),
+      ...(manualMergeQtyTotal > 0 ? [`（前期件數 ${manualMergeQtyTotal} 件）`] : []),
     ] : []),
     '',
     ...itemLines,
     ...mergeLines,
     ...(reserveTotal > 0 ? [`（預留金 -$${reserveTotal}）`] : []),
     '',
-    ...(freeShipping && shippingMode === '超商' ? [`匯款總金額 ＄${totalAmount} 超取免運（滿3000）`] :
-        freeShipping && shippingMode === '郵局' ? [`匯款總金額 ＄${totalAmount} 郵寄免運（滿3000）`] :
+    ...(freeShipping && shippingMode === '超商' ? [`匯款總金額 ＄${totalAmount} 超取免運`] :
+        freeShipping && shippingMode === '郵局' ? [`匯款總金額 ＄${totalAmount} 郵寄免運`] :
         shippingMode === '超商' ? [`匯款總金額 ＄${totalAmount} +${shipFee60}超取 ＝ ＄${amt60}`] :
         shippingMode === '郵局' ? [`匯款總金額 ＄${totalAmount} +${shipFee80}郵寄 ＝ ＄${amt80}`] :
         [`匯款總金額 ＄${totalAmount} +${shipFee60}超取 ＝ ＄${amt60}`, `匯款總金額 ＄${totalAmount} +${shipFee80}郵寄 ＝ ＄${amt80}`]),
