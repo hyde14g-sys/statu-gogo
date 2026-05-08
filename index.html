@@ -1399,10 +1399,9 @@ function getTotalQtyDeep(record, db) {
 
 function mergeUnsettled() {
   if (pendingMergeRecords.length === 0) return;
-  const db = window.customerDb || [];
   const totalAmt = pendingMergeRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
-  // 深度計算件數：包含每筆未結單自己合併進來的所有舊單件數
-  const totalQtyVal = pendingMergeRecords.reduce((s, r) => s + getTotalQtyDeep(r, db), 0);
+  // 件數：自身件數 + 已記錄的上期件數，不遞迴（避免重複計算）
+  const totalQtyVal = pendingMergeRecords.reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0), 0);
 
   // Fill merge fields
   document.getElementById('mergeAmount').value = totalAmt;
