@@ -387,7 +387,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBa05CUZ2kvELPyGcYFVqOARk8I0JLLH9Y",
@@ -406,19 +406,7 @@
   onSnapshot(q, (snapshot) => {
     const allDocs = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id }));
     
-    // Build credit balance map from Firebase
-    window.creditBalanceMap = {};
-    allDocs.filter(r => r.isCreditBalance).forEach(r => {
-      const existing = window.creditBalanceMap[r.name] || 0;
-      // Keep latest (highest timestamp)
-      if (!window.creditBalanceMap[r.name + '_ts'] || r.timestamp > window.creditBalanceMap[r.name + '_ts']) {
-        window.creditBalanceMap[r.name] = r.creditAmount || 0;
-        window.creditBalanceMap[r.name + '_ts'] = r.timestamp || 0;
-      }
-    });
-
-    // Filter out credit balance records from main db
-    window.customerDb = allDocs.filter(r => !r.isCreditBalance).map(d => {
+    window.customerDb = allDocs.map(d => {
       // 自動偵測舊資料：totalAmount <= 0 且未標記 isCreditOrder 的視為預留金單
       if ((d.totalAmount || 0) <= 0 && !d.isCreditOrder && d.settled) {
         d.isCreditOrder = true;
@@ -426,16 +414,32 @@
       return d;
     });
 
-    // Sync creditBalanceMap to localStorage
-    Object.keys(window.creditBalanceMap).forEach(k => {
-      if (!k.endsWith('_ts')) {
-        localStorage.setItem('credit_' + k, window.creditBalanceMap[k]);
-      }
-    });
-
     if (typeof renderCustomerDb === 'function') renderCustomerDb();
     if (typeof refreshStats === 'function') refreshStats();
   });
+
+  // 監聽 credits collection
+  const creditsQ = query(collection(db, "credits"));
+  onSnapshot(creditsQ, (snap) => {
+    window.creditBalanceMap = {};
+    snap.docs.forEach(d => {
+      const data = d.data();
+      window.creditBalanceMap[data.name] = data.amount || 0;
+      window.creditBalanceMap[data.name + '_docId'] = d.id;
+    });
+    if (typeof renderCustomerDb === 'function') renderCustomerDb();
+  });
+
+  // Firebase credit functions
+  window.saveCredit = async (name, amount) => {
+    const creditDoc = doc(db, "credits", name.trim().replace(/\s+/g, '_'));
+    await setDoc(creditDoc, { name: name.trim(), amount: amount, updatedAt: Date.now() });
+  };
+
+  window.deleteCredit = async (name) => {
+    const creditDoc = doc(db, "credits", name.trim().replace(/\s+/g, '_'));
+    await deleteDoc(creditDoc);
+  };
 
   // 儲存到 Firestore
   window.saveToFirestore = async (record) => {
@@ -1296,6 +1300,8 @@ function clearTable() {
   document.getElementById('reserveAmount').value = '';
   document.getElementById('manualMergeAmount').value = '';
   document.getElementById('manualMergeQty').value = '';
+  document.getElementById('manualMergeAmount').value = '';
+  document.getElementById('manualMergeQty').value = '';
   manualMergeTotal = 0; manualMergeQtyTotal = 0;
   document.getElementById('mergeStatBlock').style.display = 'none';
   document.getElementById('totalQtyAllBlock').style.display = 'none';
@@ -1502,40 +1508,27 @@ function getCreditKey(name) { return 'credit_' + name.trim(); }
 
 // 預留金餘額：存 Firebase + localStorage 雙備份
 function saveCreditBalance(name, amount) {
-  localStorage.setItem(getCreditKey(name), amount);
-  // 存到 Firebase credits collection
-  if (window.saveToFirestore) {
-    window.saveToFirestore({ 
-      id: Date.now(), name: name.trim(),
-      isCreditBalance: true, creditAmount: amount,
-      totalAmount: 0, totalQty: 0, itemCount: 0,
-      orders: [], exportText: '', date: new Date().toLocaleDateString('zh-TW'),
-      timestamp: Date.now()
-    });
+  // 更新本地 map 即時反映
+  if (!window.creditBalanceMap) window.creditBalanceMap = {};
+  window.creditBalanceMap[name.trim()] = amount;
+  // 存到 Firebase credits collection（覆蓋）
+  if (window.saveCredit) {
+    window.saveCredit(name.trim(), amount);
   }
 }
 
 function getCreditBalance(name) {
-  // 優先從 Firebase 讀（由 window.creditBalanceMap 提供）
   const n = name.trim();
   if (window.creditBalanceMap && window.creditBalanceMap[n] !== undefined) {
-    return window.creditBalanceMap[n];
+    return Number(window.creditBalanceMap[n]) || 0;
   }
-  return parseFloat(localStorage.getItem(getCreditKey(n)) || '0');
+  return 0;
 }
 
 function clearCreditBalance(name) {
   const n = name.trim();
-  localStorage.removeItem(getCreditKey(n));
   if (window.creditBalanceMap) window.creditBalanceMap[n] = 0;
-  // 找到 Firebase 裡的 creditBalance 記錄並刪除
-  const db = window.customerDb || [];
-  const creditRecords = db.filter(r => r.isCreditBalance && r.name === n);
-  creditRecords.forEach(r => {
-    if (window.deleteFromFirestore && r._docId) {
-      window.deleteFromFirestore(r._docId);
-    }
-  });
+  if (window.deleteCredit) window.deleteCredit(n);
 }
 
 function useCreditBalance(name, amount) {
@@ -1544,9 +1537,9 @@ function useCreditBalance(name, amount) {
   if (remaining <= 0) {
     clearCreditBalance(name);
   } else {
-    localStorage.setItem(getCreditKey(name), remaining);
+    saveCreditBalance(name, remaining);
   }
-  return Math.max(0, existing - amount); // return remaining
+  return Math.max(0, existing - amount);
 }
 let pendingMergedIds = []; // 等儲存時才正式標記被合併的舊單
 
@@ -1738,7 +1731,9 @@ function generateExport() {
 
   const totalManualMergeQty = manualMergeQtyTotal || 0;
   const totalQtyAll = (mergeQtyTotal > 0 || totalManualMergeQty > 0) ? totalQty + mergeQtyTotal + totalManualMergeQty : 0;
-  const mergeLines = mergeTotal > 0 ? [
+  const allMergeAmt = mergeTotal + manualMergeTotal;
+  const allMergeQtyVal = mergeQtyTotal + manualMergeQtyTotal;
+  const mergeLines = allMergeAmt > 0 ? [
     `（前次合併單 $${mergeTotal}）`,
     mergeQtyTotal > 0 ? `（上期件數 ${mergeQtyTotal} 件）` : '',
 
@@ -1835,6 +1830,8 @@ function clearInput() {
   nextId = 1;
   mergeTotal = 0;
   mergeQtyTotal = 0;
+  manualMergeTotal = 0;
+  manualMergeQtyTotal = 0;
   reserveTotal = 0;
   shippingMode = '';
   freeShipping = false;
@@ -1848,6 +1845,8 @@ function clearInput() {
   document.getElementById('mergeAmount').value = '';
   document.getElementById('mergeQty').value = '';
   document.getElementById('reserveAmount').value = '';
+  document.getElementById('manualMergeAmount').value = '';
+  document.getElementById('manualMergeQty').value = '';
 
   // 重新渲染
   renderTable();
@@ -1963,15 +1962,7 @@ localStorage.setItem('statuProfiles', JSON.stringify(profiles));
   localStorage.setItem('statuActiveProfile', activeProfile);
 }
 
-function openProfile(name) {
-  editingProfile = name;
-  document.getElementById('modalTitle').textContent = '「' + name + '」帳號設定';
-  document.getElementById('modalBankName').value = profiles[name].bankName;
-  document.getElementById('modalAccNum').value = profiles[name].accNum;
-  document.getElementById('modalHolderName').value = profiles[name].holderName || '';
-  const modal = document.getElementById('profileModal');
-  modal.style.display = 'flex';
-}
+
 
 function closeProfileModal() {
   document.getElementById('profileModal').style.display = 'none';
@@ -1994,7 +1985,19 @@ function updateProfileButtons() {
   ['蛇郵局','蛇富邦','兔中信','亦郵局','亦中信'].forEach(name => {
     const btn = document.getElementById('btn_' + name);
     if (!btn) return;
-    btn.classList.toggle('active-profile', name === activeProfile);
+    const isActive = name === activeProfile;
+    btn.classList.toggle('active-profile', isActive);
+    if (isActive) {
+      btn.style.background = '#2a2a36';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#888';
+      btn.style.boxShadow = 'inset 0 0 0 2px var(--accent)';
+    } else {
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+      btn.style.boxShadow = '';
+    }
   });
 }
 
@@ -2045,7 +2048,7 @@ function saveCurrentCustomer() {
     date: new Date().toLocaleDateString('zh-TW') + ' ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false}),
     itemCount: orders.length,
     totalQty: orders.reduce((s, o) => (o.noQty||o.outOfStock) ? s : s + (parseFloat(o.qty)||0), 0),
-    totalAmount: Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty*o.price, 0)) + mergeTotal - reserveTotal,
+    totalAmount: Math.round(orders.reduce((s, o) => (o.noPrice||o.outOfStock) ? s : s + o.qty*o.price, 0)) + mergeTotal + manualMergeTotal - reserveTotal,
     exportText,
     orders: JSON.parse(JSON.stringify(orders)),
     mergedFromIds,  // 記錄合併了哪些舊單
@@ -2059,7 +2062,11 @@ function saveCurrentCustomer() {
   // 偵測負數：計算預留金餘額
   const finalAmount = record.totalAmount;
   const creditBalance = finalAmount < 0 ? Math.abs(finalAmount) : 0;
-  if (creditBalance > 0) record.totalAmount = 0; // 負數單金額歸零，餘額另存
+  if (creditBalance > 0) {
+    record.totalAmount = 0; // 負數單金額歸零，餘額另存
+    record.creditAmount = creditBalance; // 另存預留金金額供顯示用
+    record.isCreditOrder = true;
+  }
 
   const doSave = () => {
     if (window.saveToFirestore) {
@@ -2117,7 +2124,7 @@ function renderCustomerDb(filter = '') {
   // Update counters
   const allDb = window.customerDb || [];
   const settledCount = allDb.filter(r => r.settled && !r.mergedInto && !r.isCreditOrder).length;
-  const unsettledCount = allDb.filter(r => !r.settled && !r.mergedInto && (r.totalAmount||0) > 0).length;
+  const unsettledCount = allDb.filter(r => !r.settled && !r.mergedInto).length;
   const sc = document.getElementById('statSettledCount');
   const uc = document.getElementById('statUnsettledCount');
   if (sc) sc.textContent = settledCount;
@@ -2165,7 +2172,7 @@ function renderCustomerDb(filter = '') {
         <div style="flex:1;min-width:120px">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-weight:700;color:var(--text);font-size:0.9rem">👤 ${name}</span>
-            ${getCreditBalance(name) > 0 ? `<span style="font-size:0.72rem;padding:1px 7px;border-radius:4px;background:rgba(96,165,250,0.15);color:#60a5fa;font-weight:700">💰 預留 $${getCreditBalance(name)}</span>` : ''}
+
             ${hasUnsettled ? '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(251,113,133,0.2);color:#fb7185;font-weight:700">未結單</span>' : '<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(245,197,66,0.15);color:#f5c542;font-weight:700">已結單</span>'}
             ${creditBalance > 0 ? `<span style="font-size:0.7rem;padding:1px 7px;border-radius:4px;background:rgba(96,165,250,0.15);color:#60a5fa;font-weight:700">💰 預留 $${creditBalance}</span>` : ''}
           </div>
@@ -2198,7 +2205,7 @@ function renderCustomerDb(filter = '') {
             ` : r.settled && r.isCreditOrder ? `
               <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
                 border:1px solid #60a5fa;background:rgba(96,165,250,0.15);color:#60a5fa;
-                font-family:'Noto Sans TC',sans-serif;">💰 預留金單 $${Math.abs(r.totalAmount||0)}</span>
+                font-family:'Noto Sans TC',sans-serif;">💰 預留金單 $${r.creditAmount || Math.abs(r.totalAmount||0)}</span>
             ` : r.settled ? `
               <span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;
                 border:1px solid #f5c542;background:rgba(245,197,66,0.15);color:#f5c542;
@@ -2279,8 +2286,6 @@ function settleOrder(id) {
   if (isCreditOrder) r.isCreditOrder = true;
   if (window.updateFirestore && r._docId) {
     window.updateFirestore(r._docId, { settled: true, isCreditOrder: isCreditOrder });
-  } else {
-    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
   }
   renderCustomerDb(document.getElementById('customerSearchInput').value.trim());
   refreshStats();
@@ -2325,7 +2330,6 @@ function saveCreditEdit() {
     const db = window.customerDb || window._customerDb || [];
     const r = db.find(r => Number(r.id) === id);
     if (!r) { alert('找不到客戶資料，id=' + id); return; }
-    localStorage.setItem(getCreditKey(r.name), newAmt);
     document.getElementById('creditEditRow').style.display = 'none';
     if (newAmt > 0) {
       document.getElementById('viewCreditAmount').textContent = '$' + newAmt;
@@ -2481,7 +2485,7 @@ function refreshStats() {
 
   // 總覽
   const names = [...new Set(db.map(r => r.name))];
-  const totalRevenue = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const totalRevenue = db.filter(r => !r.mergedInto && !r.isCreditOrder).reduce((s, r) => s + (r.totalAmount || 0), 0);
   // 總件數：只算非已併入的訂單（避免重複計算）
   const totalQtyAll = db.filter(r => !r.mergedInto).reduce((s, r) => s + (r.totalQty || 0) + (r.mergeQtyTotal || 0) + (r.manualMergeQtyTotal || 0), 0);
   // 平均單件金額
