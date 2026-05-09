@@ -378,6 +378,38 @@
   .item-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
   /* Scroll */
+
+  /* ── LOTTERY OVERLAY ── */
+  #lotteryOverlay {
+    display: none; position: fixed; inset: 0;
+    background: #0d0d14; z-index: 9000;
+    overflow-y: auto; overflow-x: hidden;
+  }
+  #lotteryOverlay.show { display: block; }
+  /* Reset container inside overlay */
+  #lotteryOverlay .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .lottery-close-btn {
+    position: fixed; top: 14px; right: 14px; z-index: 9100;
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.55); color: white;
+    font-size: 1.1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; backdrop-filter: blur(4px);
+  }
+  .lottery-close-btn:hover { background: rgba(251,113,133,0.4); border-color: #fb7185; color: #fb7185; }
+  .lottery-open-btn {
+    margin-top: 10px; padding: 8px 20px;
+    border-radius: 8px; border: 1px solid #ff6b9d;
+    background: rgba(255,107,157,0.1); color: #ff6b9d;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+  }
+  .lottery-open-btn:hover { background: rgba(255,107,157,0.22); transform: scale(1.03); }
   .table-wrap { overflow-x: auto; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -467,6 +499,7 @@
     <h1>史塔兔 GOGO STAR 2</h1>
   </div>
   <p id="dailyQuote" style="color:#39ff14;text-shadow:0 0 8px #39ff14;">輕輕鬆鬆算訂單 老婆辛苦了</p>
+        <button class="lottery-open-btn" onclick="openLottery()">🎰 幸運抽獎</button>
 </div>
 
 <div class="layout">
@@ -1109,6 +1142,219 @@
   </div>
 
 
+  <!-- LOTTERY OVERLAY -->
+  <div id="lotteryOverlay">
+    <button class="lottery-close-btn" onclick="closeLottery()">✕</button>
+
+<div class="stars" id="stars"></div>
+<div class="container">
+  <div class="header">
+    <h1>🐰 史塔兔抽獎機</h1>
+    <p>球球在肚子裡滾～滾～滾～</p>
+  </div>
+
+  <div class="status-bar" id="statusBar">請設定名單，按開始抽獎 🐰</div>
+
+  <!-- Rabbit Machine -->
+  <div class="machine-wrap" id="machineWrap">
+    <svg id="rabbitSvg" viewBox="0 0 500 580" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg" cx="40%" cy="35%">
+          <stop offset="0%" stop-color="#2a2a4a" stop-opacity=".5"/>
+          <stop offset="100%" stop-color="#0a0a18" stop-opacity=".85"/>
+        </radialGradient>
+        <linearGradient id="bellyRing" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f5c542" stop-opacity=".7"/>
+          <stop offset="50%" stop-color="#ff6b9d" stop-opacity=".5"/>
+          <stop offset="100%" stop-color="#f5c542" stop-opacity=".7"/>
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="headGrad" cx="40%" cy="35%">
+          <stop offset="0%" stop-color="#eeeef8"/>
+          <stop offset="100%" stop-color="#d0d0e8"/>
+        </radialGradient>
+        <radialGradient id="bodyGrad" cx="40%" cy="30%">
+          <stop offset="0%" stop-color="#e8e8f5"/>
+          <stop offset="100%" stop-color="#c8c8e0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Ground shadow -->
+      <ellipse cx="250" cy="552" rx="120" ry="14" fill="rgba(0,0,0,.4)"/>
+
+      <!-- ── LONG TALL EARS (卡通大長耳) ── -->
+      <!-- Left ear - tall rounded -->
+      <rect x="148" y="28" width="52" height="130" rx="26" fill="#dcdcf0"/>
+      <!-- Left ear inner -->
+      <rect x="158" y="42" width="30" height="100" rx="15" fill="#ff9ec8" opacity=".8"/>
+      <!-- Left ear highlight -->
+      <ellipse cx="168" cy="70" rx="7" ry="22" fill="rgba(255,255,255,.12)"/>
+
+      <!-- Right ear - tall rounded -->
+      <rect x="300" y="28" width="52" height="130" rx="26" fill="#dcdcf0"/>
+      <!-- Right ear inner -->
+      <rect x="312" y="42" width="30" height="100" rx="15" fill="#ff9ec8" opacity=".8"/>
+      <!-- Right ear highlight -->
+      <ellipse cx="332" cy="70" rx="7" ry="22" fill="rgba(255,255,255,.12)"/>
+
+      <!-- ── BODY (圓滾滾身體) ── -->
+      <ellipse cx="250" cy="400" rx="155" ry="160" fill="url(#bodyGrad)"/>
+      <!-- Body outline -->
+      <ellipse cx="250" cy="400" rx="155" ry="160" fill="none" stroke="#a0a0c8" stroke-width="3"/>
+
+      <!-- ── HEAD (大圓頭) ── -->
+      <!-- Head is a large circle, lower than ears -->
+      <circle cx="250" cy="215" r="125" fill="url(#headGrad)"/>
+      <!-- Head outline -->
+      <circle cx="250" cy="215" r="125" fill="none" stroke="#a0a0c8" stroke-width="3"/>
+      <!-- Head highlight -->
+      <ellipse cx="205" cy="168" rx="38" ry="26" fill="rgba(255,255,255,.25)" transform="rotate(-20 205 168)"/>
+
+      <!-- ── BELLY GLASS (透明肚子) ── -->
+      <circle cx="250" cy="415" r="128" fill="url(#bg)"/>
+      <circle cx="250" cy="415" r="128" fill="none" stroke="url(#bellyRing)" stroke-width="4" filter="url(#glow)"/>
+      <circle cx="250" cy="415" r="122" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
+      <!-- Belly glass shine -->
+      <ellipse cx="206" cy="358" rx="42" ry="26" fill="rgba(255,255,255,.08)" transform="rotate(-28 206 358)"/>
+      <ellipse cx="220" cy="370" rx="18" ry="10" fill="rgba(255,255,255,.13)" transform="rotate(-28 220 370)"/>
+
+      <!-- ── FACE ── -->
+      <!-- Eyes: big cute cartoon style -->
+      <circle cx="213" cy="205" r="22" fill="white"/>
+      <circle cx="287" cy="205" r="22" fill="white"/>
+      <!-- Pupil -->
+      <circle cx="216" cy="208" r="14" fill="#111128"/>
+      <circle cx="290" cy="208" r="14" fill="#111128"/>
+      <!-- Eye shine large -->
+      <circle cx="222" cy="200" r="7" fill="white" opacity=".95"/>
+      <circle cx="296" cy="200" r="7" fill="white" opacity=".95"/>
+      <!-- Eye shine small -->
+      <circle cx="226" cy="198" r="3" fill="white"/>
+      <circle cx="300" cy="198" r="3" fill="white"/>
+      <!-- Eye outline -->
+      <circle cx="213" cy="205" r="22" fill="none" stroke="#8888aa" stroke-width="2.5"/>
+      <circle cx="287" cy="205" r="22" fill="none" stroke="#8888aa" stroke-width="2.5"/>
+
+      <!-- Nose: triangle cute -->
+      <path d="M242 230 L258 230 L250 240 Z" fill="#ff7eb3"/>
+      <!-- Nose highlight -->
+      <ellipse cx="246" cy="231" rx="4" ry="2.5" fill="rgba(255,255,255,.5)"/>
+
+      <!-- Mouth: W shape -->
+      <path d="M235 243 Q243 253 250 247 Q257 253 265 243" stroke="#ff7eb3" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Cheeks: big round blush -->
+      <circle cx="185" cy="225" r="22" fill="#ff6b9d" opacity=".22"/>
+      <circle cx="315" cy="225" r="22" fill="#ff6b9d" opacity=".22"/>
+
+      <!-- ── ARMS (stubby cute arms) ── -->
+      <!-- Left arm -->
+      <ellipse cx="105" cy="395" rx="35" ry="52" fill="#dcdcf0" transform="rotate(20 105 395)"/>
+      <ellipse cx="105" cy="395" rx="35" ry="52" fill="none" stroke="#a0a0c8" stroke-width="2" transform="rotate(20 105 395)"/>
+      <!-- Left paw (3 bumps) -->
+      <circle cx="82" cy="448" r="16" fill="#c8c8e0"/>
+      <circle cx="74" cy="442" r="9" fill="#d8d8ee"/>
+      <circle cx="90" cy="442" r="9" fill="#d8d8ee"/>
+      <circle cx="82" cy="435" r="9" fill="#d8d8ee"/>
+
+      <!-- Right arm -->
+      <ellipse cx="395" cy="395" rx="35" ry="52" fill="#dcdcf0" transform="rotate(-20 395 395)"/>
+      <ellipse cx="395" cy="395" rx="35" ry="52" fill="none" stroke="#a0a0c8" stroke-width="2" transform="rotate(-20 395 395)"/>
+      <!-- Right paw -->
+      <circle cx="418" cy="448" r="16" fill="#c8c8e0"/>
+      <circle cx="410" cy="442" r="9" fill="#d8d8ee"/>
+      <circle cx="426" cy="442" r="9" fill="#d8d8ee"/>
+      <circle cx="418" cy="435" r="9" fill="#d8d8ee"/>
+
+      <!-- ── FEET (big cute feet) ── -->
+      <ellipse cx="185" cy="535" rx="55" ry="24" fill="#dcdcf0"/>
+      <ellipse cx="185" cy="535" rx="55" ry="24" fill="none" stroke="#a0a0c8" stroke-width="2"/>
+      <ellipse cx="315" cy="535" rx="55" ry="24" fill="#dcdcf0"/>
+      <ellipse cx="315" cy="535" rx="55" ry="24" fill="none" stroke="#a0a0c8" stroke-width="2"/>
+      <!-- Foot toes -->
+      <circle cx="158" cy="528" r="8" fill="#c8c8e0"/>
+      <circle cx="175" cy="524" r="8" fill="#c8c8e0"/>
+      <circle cx="193" cy="524" r="8" fill="#c8c8e0"/>
+      <circle cx="210" cy="528" r="8" fill="#c8c8e0"/>
+      <circle cx="288" cy="528" r="8" fill="#c8c8e0"/>
+      <circle cx="305" cy="524" r="8" fill="#c8c8e0"/>
+      <circle cx="323" cy="524" r="8" fill="#c8c8e0"/>
+      <circle cx="340" cy="528" r="8" fill="#c8c8e0"/>
+
+      <!-- ── TAIL (fluffy tail) ── -->
+      <circle cx="396" cy="452" r="26" fill="#dcdcf0"/>
+      <circle cx="396" cy="452" r="26" fill="none" stroke="#a0a0c8" stroke-width="2"/>
+      <circle cx="390" cy="445" r="14" fill="rgba(255,255,255,.07)"/>
+
+      <!-- ── BOW TIE ── -->
+      <path d="M224 258 L250 270 L276 258 L264 272 L250 268 L236 272 Z" fill="#f5c542"/>
+      <circle cx="250" cy="265" r="6" fill="#f5c542"/>
+      <circle cx="250" cy="265" r="6" fill="none" stroke="#e6b000" stroke-width="1.5"/>
+
+      <!-- ── SPARKLES ── -->
+      <text x="70" y="155" font-size="18" fill="#f5c542" opacity=".6">✦</text>
+      <text x="415" y="150" font-size="14" fill="#ff6b9d" opacity=".6">✦</text>
+      <text x="445" y="310" font-size="10" fill="#f5c542" opacity=".45">✦</text>
+      <text x="45" y="305" font-size="14" fill="#ff9ec8" opacity=".5">✦</text>
+      <text x="450" y="430" font-size="9" fill="#60a5fa" opacity=".45">✦</text>
+      <text x="38" y="430" font-size="11" fill="#a78bfa" opacity=".4">✦</text>
+    </svg>
+    <canvas id="bellyCanvas"></canvas>
+    <div class="belly-glow" id="bellyGlow"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="source-btns">
+      <button class="source-btn active" id="btnManual" onclick="setSource('manual')">✏️ 手動輸入</button>
+      <button class="source-btn" id="btnOrderRank" onclick="setSource('orderRank')">🏆 訂單數排行</button>
+      <button class="source-btn" id="btnAmountRank" onclick="setSource('amountRank')">💰 金額排行</button>
+    </div>
+    <div id="manualPanel" class="setup-panel active">
+      <textarea id="manualNames" placeholder="每行一個名字：&#10;小蛇&#10;小兔&#10;阿花&#10;小明"></textarea>
+      <div class="note">每行一個名字，重複輸入可增加機率</div>
+    </div>
+    <div id="orderRankPanel" class="setup-panel">
+      <textarea id="firebaseConfig" style="min-height:65px;font-family:'Space Mono',monospace;font-size:.72rem" placeholder='貼上 Firebase config：{"apiKey":"...","projectId":"...","appId":"..."}'></textarea>
+      <button class="btn-load" onclick="loadFB('order')">🔄 載入訂單排行名單</button>
+      <div id="fbS1" class="note"></div>
+      <div id="fbP1" class="preview-names"></div>
+    </div>
+    <div id="amountRankPanel" class="setup-panel">
+      <textarea id="firebaseConfig2" style="min-height:65px;font-family:'Space Mono',monospace;font-size:.72rem" placeholder='貼上 Firebase config：{"apiKey":"...","projectId":"...","appId":"..."}'></textarea>
+      <button class="btn-load" onclick="loadFB('amount')">🔄 載入金額排行名單</button>
+      <div id="fbS2" class="note"></div>
+      <div id="fbP2" class="preview-names"></div>
+    </div>
+    <div class="count-row" style="margin-top:12px">
+      <label>中獎人數：</label>
+      <input type="number" class="count-input" id="winCount" value="1" min="1" max="50">
+      <span style="font-size:.8rem;color:var(--muted)">人</span>
+      <button class="btn-start" id="startBtn" onclick="startLottery()">🐰 開始抽獎</button>
+      <button class="btn-reset" id="resetBtn" onclick="resetLottery()">↺ 重置</button>
+    </div>
+  </div>
+
+  <div class="winner-area" id="winnerArea">
+    <div class="winner-title">🏆 中獎名單</div>
+    <div class="winner-list" id="winnerList"></div>
+  </div>
+</div>
+
+<!-- Spotlight -->
+<div id="spotlight">
+  <div class="confetti-wrap" id="confWrap"></div>
+  <div class="spotlight-rabbit">🐰</div>
+  <div class="spotlight-ball" id="spotBall"></div>
+  <div class="spotlight-name" id="spotName"></div>
+  <div class="spotlight-sub" id="spotSub"></div>
+  <button class="spotlight-btn" id="spotBtn" onclick="nextWinner()">繼續抽獎 ▶</button>
+</div>
+
+
+
+  </div>
+
   <!-- CATEGORY MANAGE MODAL -->
   <div id="catManageModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10002;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--surface);border:2px solid var(--accent);border-radius:14px;width:100%;max-width:340px;overflow:hidden">
@@ -1506,7 +1752,7 @@ let pendingMergeRecords = [];
 // ── Credit Balance (預留金餘額) ───────────────────────────────
 function getCreditKey(name) { return 'credit_' + name.trim(); }
 
-// 預留金餘額：存 Firebase + localStorage 雙備份
+// 預留金餘額：純 Firebase 儲存（覆蓋同名記錄）
 function saveCreditBalance(name, amount) {
   // 更新本地 map 即時反映
   if (!window.creditBalanceMap) window.creditBalanceMap = {};
@@ -2098,7 +2344,6 @@ function saveCurrentCustomer() {
         const old = customerDb.find(r => Number(r.id) === Number(oldId));
         if (old) old.mergedInto = true;
       });
-      localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
       if (creditBalance > 0) saveCreditBalance(name, creditBalance);
       pendingMergedIds = [];
       renderCustomerDb();
@@ -2401,7 +2646,6 @@ function saveCustomerInfo() {
       rec.phone = phone;
       rec.address = address;
     });
-    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
   }
 
   const btn = document.querySelector('[onclick="saveCustomerInfo()"]');
@@ -2431,7 +2675,6 @@ function confirmDeleteYes() {
     window.deleteFromFirestore(pendingDeleteDocId).catch(e => alert('刪除失敗：' + e.message));
   } else {
     customerDb = customerDb.filter(r => Number(r.id) !== pendingDeleteId);
-    localStorage.setItem('statuCustomerDb', JSON.stringify(customerDb));
     renderCustomerDb(document.getElementById('customerSearchInput').value.trim());
   }
   pendingDeleteId = null;
@@ -3249,6 +3492,336 @@ window.addEventListener('load', () => {
     el.textContent = q;
   }
 });
+
+// ── Lottery Open/Close ───────────────────────────────────────
+function openLottery() {
+  const overlay = document.getElementById('lotteryOverlay');
+  overlay.classList.add('show');
+  overlay.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { if(window._lotteryInit) window._lotteryInit(); }, 200);
+}
+function closeLottery() {
+  document.getElementById('lotteryOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  if(window._lotteryStop) window._lotteryStop();
+}
+
+// ── Lottery App (isolated scope) ─────────────────────────────
+;(function(){
+"use strict";
+
+// Stars
+(()=>{const w=document.getElementById('stars');for(let i=0;i<55;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2+1;s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;w.appendChild(s);}})();
+
+// Belly canvas setup
+const SVG_W=500,SVG_H=580,BC_SVG=250,BY_SVG=415,BR_SVG=125;
+let bc=document.getElementById('bellyCanvas'),ctx=bc.getContext('2d');
+let cScale=1,bCX,bCY,bR;
+
+function layoutCanvas(){
+  const svg=document.getElementById('rabbitSvg');
+  const rect=svg.getBoundingClientRect();
+  cScale=rect.width/SVG_W;
+  bCX=BC_SVG*cScale; bCY=BY_SVG*cScale; bR=BR_SVG*cScale;
+  const left=bCX-bR,top=bCY-bR,size=bR*2;
+  bc.style.left=left+'px'; bc.style.top=top+'px';
+  bc.width=size*devicePixelRatio; bc.height=size*devicePixelRatio;
+  bc.style.width=size+'px'; bc.style.height=size+'px';
+  ctx=bc.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  const g=document.getElementById('bellyGlow');
+  g.style.left=(left-4)+'px'; g.style.top=(top-4)+'px';
+  g.style.width=(size+8)+'px'; g.style.height=(size+8)+'px';
+}
+window.addEventListener('resize',()=>{layoutCanvas();});
+window.addEventListener('load',layoutCanvas);
+
+// Colors
+const COLORS=['#FFB3BA','#FFDFBA','#FFFFBA','#BAFFC9','#BAE1FF','#F4BFFF','#FFD4BA','#C9FFE5','#FFE4BA','#D4BAFF','#BAFFEB','#FFE1BA','#FFB3DE','#BAFFD9','#FFD0BA','#C3F4BA','#FFBABA','#BAF0FF','#F0FFBA','#FFBAED'];
+const rc=()=>COLORS[Math.floor(Math.random()*COLORS.length)];
+function lighten(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgb(${Math.min(255,r+50)},${Math.min(255,g+50)},${Math.min(255,b+50)})`;}
+
+class Ball{
+  constructor(n,c,r){
+    this.name=n;this.color=c;this.r=r;this.winner=false;
+    const a=Math.random()*Math.PI*2,d=Math.random()*(bR-r-6);
+    this.x=Math.cos(a)*d; this.y=Math.sin(a)*d;
+    this.vx=(Math.random()-.5)*7; this.vy=(Math.random()-.5)*7;
+  }
+  update(spd){
+    if(this.winner)return;
+    this.x+=this.vx*spd; this.y+=this.vy*spd;
+    this.vy+=0.09*spd;
+    const d=Math.sqrt(this.x*this.x+this.y*this.y),max=bR-this.r-3;
+    if(d>max){
+      const nx=this.x/d,ny=this.y/d;
+      this.x=nx*max; this.y=ny*max;
+      const dot=this.vx*nx+this.vy*ny;
+      this.vx-=2*dot*nx*0.85; this.vy-=2*dot*ny*0.85;
+    }
+    const spd2=Math.sqrt(this.vx*this.vx+this.vy*this.vy);
+    if(spd2>14){this.vx=this.vx/spd2*14;this.vy=this.vy/spd2*14;}
+  }
+  collide(o){
+    if(this.winner||o.winner)return;
+    const dx=o.x-this.x,dy=o.y-this.y,d=Math.sqrt(dx*dx+dy*dy),mn=this.r+o.r;
+    if(d<mn&&d>0){
+      const nx=dx/d,ny=dy/d,ov=mn-d;
+      this.x-=nx*ov/2;this.y-=ny*ov/2;o.x+=nx*ov/2;o.y+=ny*ov/2;
+      const dvx=this.vx-o.vx,dvy=this.vy-o.vy,dot=dvx*nx+dvy*ny;
+      if(dot>0){this.vx-=dot*nx;this.vy-=dot*ny;o.vx+=dot*nx;o.vy+=dot*ny;}
+    }
+  }
+  draw(ctx){
+    const cx=this.x+bR,cy=this.y+bR;
+    ctx.save();
+    ctx.beginPath();ctx.arc(cx+1,cy+2,this.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.2)';ctx.fill();
+    const g=ctx.createRadialGradient(cx-this.r*.3,cy-this.r*.3,this.r*.1,cx,cy,this.r);
+    g.addColorStop(0,lighten(this.color));g.addColorStop(1,this.color);
+    ctx.beginPath();ctx.arc(cx,cy,this.r,0,Math.PI*2);
+    ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.arc(cx-this.r*.28,cy-this.r*.28,this.r*.26,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.fill();
+    if(this.winner){
+      ctx.beginPath();ctx.arc(cx,cy,this.r+4,0,Math.PI*2);
+      ctx.strokeStyle='#f5c542';ctx.lineWidth=3;ctx.stroke();
+    }
+    ctx.fillStyle='rgba(0,0,0,.75)';
+    ctx.font=`bold ${Math.max(8,this.r*.37)}px 'Noto Sans TC',sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const t=this.name.length>5?this.name.slice(0,4)+'…':this.name;
+    ctx.fillText(t,cx,cy,this.r*1.7);
+    ctx.restore();
+  }
+}
+
+let balls=[],raf=null,spd=1,running=false,src='manual',loaded=[],pending=[],wIdx=0,bgmT=null,aCtx=null,rollT=0;
+
+function layoutBalls(){
+  const n=balls.length,r=Math.max(13,Math.min(36,bR/Math.sqrt(n*2.4)));
+  balls.forEach(b=>b.r=r);
+}
+
+// Source
+function setSource(s){
+  src=s;
+  ['manual','orderRank','amountRank'].forEach(x=>{
+    const id='btn'+x.charAt(0).toUpperCase()+x.slice(1);
+    document.getElementById(id).classList.toggle('active',x===s);
+    document.getElementById(x+'Panel').classList.toggle('active',x===s);
+  });
+}
+
+function getNames(){
+  if(src==='manual')return document.getElementById('manualNames').value.split('\n').map(n=>n.trim()).filter(Boolean);
+  return loaded;
+}
+
+// Firebase
+async function loadFB(mode){
+  const cfgEl=document.getElementById(mode==='order'?'firebaseConfig':'firebaseConfig2');
+  const stEl=document.getElementById(mode==='order'?'fbS1':'fbS2');
+  const pvEl=document.getElementById(mode==='order'?'fbP1':'fbP2');
+  const raw=cfgEl.value.trim();
+  if(!raw){stEl.textContent='⚠️ 請貼上 Firebase 設定';return;}
+  let cfg;try{cfg=JSON.parse(raw);}catch{stEl.textContent='❌ JSON 格式錯誤';return;}
+  stEl.textContent='載入中...';
+  try{
+    const{initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const{getFirestore,collection,getDocs}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app=getApps().length?getApps()[0]:initializeApp(cfg);
+    const db=getFirestore(app);
+    const snap=await getDocs(collection(db,'customers'));
+    const docs=snap.docs.map(d=>d.data()).filter(r=>!r.mergedInto&&!r.isCreditOrder);
+    const byName={};
+    docs.forEach(r=>{if(!byName[r.name])byName[r.name]={orders:0,amount:0};byName[r.name].orders++;byName[r.name].amount+=(r.totalAmount||0);});
+    const sorted=Object.entries(byName).sort((a,b)=>mode==='order'?b[1].orders-a[1].orders:b[1].amount-a[1].amount);
+    loaded=sorted.map(([n])=>n);
+    stEl.textContent=`✅ 已載入 ${loaded.length} 位`;
+    pvEl.innerHTML=loaded.map((n,i)=>`<span style="margin-right:8px">${i+1}. ${n}</span>`).join('');
+  }catch(e){stEl.textContent='❌ '+e.message;}
+}
+
+// Audio
+function initAudio(){if(!aCtx)aCtx=new(window.AudioContext||window.webkitAudioContext)();}
+function roll(){
+  if(!aCtx)return;
+  const o=aCtx.createOscillator(),g=aCtx.createGain();
+  o.connect(g);g.connect(aCtx.destination);
+  o.frequency.value=140+Math.random()*110;o.type='sine';
+  g.gain.setValueAtTime(.035,aCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+.07);
+  o.start();o.stop(aCtx.currentTime+.08);
+}
+function win(){
+  if(!aCtx)return;
+  [523,659,784,1047,1319].forEach((f,i)=>{
+    const o=aCtx.createOscillator(),g=aCtx.createGain();
+    o.connect(g);g.connect(aCtx.destination);
+    o.frequency.value=f;o.type='sine';
+    g.gain.setValueAtTime(0,aCtx.currentTime+i*.12);
+    g.gain.linearRampToValueAtTime(.1,aCtx.currentTime+i*.12+.05);
+    g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+i*.12+.35);
+    o.start(aCtx.currentTime+i*.12);o.stop(aCtx.currentTime+i*.12+.4);
+  });
+}
+function startBGM(){
+  if(!aCtx)return;let b=0;
+  const p=[440,494,523,587,659,587,523,494,440,392,440,494];
+  bgmT=setInterval(()=>{
+    const o=aCtx.createOscillator(),g=aCtx.createGain();
+    o.connect(g);g.connect(aCtx.destination);
+    o.frequency.value=p[b%p.length];o.type='triangle';
+    g.gain.setValueAtTime(.045,aCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,aCtx.currentTime+.18);
+    o.start();o.stop(aCtx.currentTime+.2);b++;
+  },185);
+}
+function stopBGM(){if(bgmT){clearInterval(bgmT);bgmT=null;}}
+
+// Lottery
+function startLottery(){
+  initAudio();
+  const names=getNames();
+  if(!names.length){setStatus('⚠️ 請先輸入名單！',true);return;}
+  const wc=parseInt(document.getElementById('winCount').value)||1;
+  if(wc>names.length){setStatus(`⚠️ 人數不能超過 ${names.length} 人`,true);return;}
+  wIdx=0;pending=[];balls=[];spd=.6;
+  document.getElementById('winnerArea').classList.remove('show');
+  document.getElementById('winnerList').innerHTML='';
+  document.getElementById('startBtn').disabled=true;
+  document.getElementById('resetBtn').style.display='none';
+  layoutCanvas();
+  const sh=[...names].sort(()=>Math.random()-.5);
+  pending=sh.slice(0,wc);
+  const r=Math.max(13,Math.min(34,bR/Math.sqrt(sh.length*2.4)));
+  balls=sh.map(n=>new Ball(n,rc(),r));
+  running=true;
+  document.getElementById('bellyGlow').classList.add('active');
+  startBGM();
+  setStatus('🎰 球球瘋狂滾動中...',true);
+  cancelAnimationFrame(raf);
+  loop();
+  setTimeout(pickNext,3800);
+}
+
+function loop(){
+  rollT++;
+  if(rollT%13===0)roll();
+  spd=Math.min(2.6,spd+.012);
+  const size=bR*2;
+  ctx.clearRect(0,0,size,size);
+  ctx.save();
+  ctx.beginPath();ctx.arc(bR,bR,bR-2,0,Math.PI*2);ctx.clip();
+  for(let i=0;i<balls.length;i++){
+    balls[i].update(spd);
+    for(let j=i+1;j<balls.length;j++)balls[i].collide(balls[j]);
+  }
+  balls.forEach(b=>b.draw(ctx));
+  ctx.restore();
+  raf=requestAnimationFrame(loop);
+}
+
+function pickNext(){
+  if(wIdx>=pending.length){finishLottery();return;}
+  spd*=.5;
+  const name=pending[wIdx];
+  setStatus(`🎯 抽出第 ${wIdx+1} 位...`,true);
+  const wb=balls.find(b=>b.name===name&&!b.winner);
+  if(wb){wb.winner=true;wb.vx=0;wb.vy=0;setTimeout(()=>showSpot(name,wb.color,wIdx+1),800);}
+}
+
+function showSpot(name,color,num){
+  stopBGM();win();
+  // Confetti
+  const cw=document.getElementById('confWrap');cw.innerHTML='';
+  const cc=['#f5c542','#ff6b9d','#39ff14','#60a5fa','#a78bfa','#fb923c'];
+  for(let i=0;i<65;i++){
+    const c=document.createElement('div');c.className='confetti-piece';
+    c.style.cssText=`left:${Math.random()*100}%;background:${cc[i%cc.length]};--dur:${1+Math.random()*2.5}s;--delay:${Math.random()*.6}s;transform:rotate(${Math.random()*360}deg);width:${4+Math.random()*9}px;height:${4+Math.random()*9}px;`;
+    cw.appendChild(c);
+  }
+  const sb=document.getElementById('spotBall');
+  sb.textContent=name;
+  sb.style.background=`radial-gradient(circle at 35% 35%,${lighten(color)},${color})`;
+  sb.style.boxShadow=`0 0 50px ${color},0 0 100px rgba(255,255,255,.12)`;
+  sb.style.animation='none';sb.offsetHeight;sb.style.animation='spotIn .7s cubic-bezier(.34,1.56,.64,1) forwards';
+
+  const sn=document.getElementById('spotName');
+  sn.textContent=`🎉 第 ${num} 位得獎者！`;
+  sn.style.animation='none';sn.offsetHeight;sn.style.animation='fadeUp .5s .4s ease forwards';sn.style.opacity='0';
+
+  const ss=document.getElementById('spotSub');
+  ss.textContent=wIdx+1<pending.length?`還有 ${pending.length-wIdx-1} 位等待`:'最後一位得獎者！';
+  ss.style.animation='none';ss.offsetHeight;ss.style.animation='fadeUp .5s .6s ease forwards';ss.style.opacity='0';
+
+  const sb2=document.getElementById('spotBtn');
+  sb2.textContent=wIdx+1<pending.length?'繼續抽獎 ▶':'完成 🎊';
+  sb2.style.animation='none';sb2.offsetHeight;sb2.style.animation='fadeUp .5s .8s ease forwards';sb2.style.opacity='0';
+
+  document.getElementById('spotlight').classList.add('show');
+}
+
+function nextWinner(){
+  document.getElementById('spotlight').classList.remove('show');
+  addWBall(pending[wIdx]);wIdx++;
+  if(wIdx<pending.length){spd=.7;startBGM();setStatus('🎰 繼續滾動...',true);setTimeout(pickNext,2600);}
+  else finishLottery();
+}
+
+function addWBall(name){
+  document.getElementById('winnerArea').classList.add('show');
+  const wb=balls.find(b=>b.name===name&&b.winner);
+  const color=wb?wb.color:rc();
+  const div=document.createElement('div');
+  div.className='winner-ball';div.textContent=name;
+  div.style.background=`radial-gradient(circle at 35% 35%,${lighten(color)},${color})`;
+  div.style.boxShadow=`0 0 12px ${color}80`;
+  document.getElementById('winnerList').appendChild(div);
+}
+
+function finishLottery(){
+  stopBGM();cancelAnimationFrame(raf);running=false;
+  document.getElementById('bellyGlow').classList.remove('active');
+  setStatus(`🎊 抽獎完成！共 ${wIdx} 位幸運得獎者`,true);
+  document.getElementById('resetBtn').style.display='';
+  document.getElementById('startBtn').disabled=false;
+}
+
+function resetLottery(){
+  stopBGM();cancelAnimationFrame(raf);running=false;balls=[];
+  document.getElementById('bellyGlow').classList.remove('active');
+  ctx.clearRect(0,0,bR*2,bR*2);
+  document.getElementById('winnerArea').classList.remove('show');
+  document.getElementById('winnerList').innerHTML='';
+  document.getElementById('spotlight').classList.remove('show');
+  document.getElementById('startBtn').disabled=false;
+  document.getElementById('resetBtn').style.display='none';
+  setStatus('請設定名單，按開始抽獎 🐰');spd=1;
+}
+
+function setStatus(msg,h=false){
+  const el=document.getElementById('statusBar');
+  el.textContent=msg;el.className='status-bar'+(h?' highlight':'');
+}
+
+
+// Expose hooks
+window._lotteryInit = function(){ if(typeof layoutCanvas==='function') layoutCanvas(); };
+window._lotteryStop = function(){
+  if(typeof stopBGM==='function') stopBGM();
+  if(typeof raf!=='undefined') cancelAnimationFrame(raf);
+};
+
+// Expose all lottery functions to global scope (needed for onclick handlers)
+window.setSource = setSource;
+window.loadFB = loadFB;
+window.startLottery = startLottery;
+window.resetLottery = resetLottery;
+window.nextWinner = nextWinner;
+})();
 
 // ── Typing Demo ──────────────────────────────────────────────
 const demoLines = [
