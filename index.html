@@ -1144,215 +1144,85 @@
 
   <!-- LOTTERY OVERLAY -->
   <div id="lotteryOverlay">
+    <div class="stars" id="lotteryStars" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;"></div>
     <button class="lottery-close-btn" onclick="closeLottery()">✕</button>
 
-<div class="stars" id="stars"></div>
-<div class="container">
-  <div class="header">
-    <h1>🐰 史塔兔抽獎機</h1>
-    <p>球球在肚子裡滾～滾～滾～</p>
-  </div>
+    <div style="position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px 16px 40px;">
 
-  <div class="status-bar" id="statusBar">請設定名單，按開始抽獎 🐰</div>
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:12px;">
+        <h1 style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#f5c542,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🐰 史塔兔抽獎機</h1>
+        <p id="statusBar" style="color:#6b6b9a;font-size:.82rem;margin-top:4px;">請設定名單，按開始抽獎</p>
+      </div>
 
-  <!-- Rabbit Machine -->
-  <div class="machine-wrap" id="machineWrap">
-    <svg id="rabbitSvg" viewBox="0 0 500 580" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="bg" cx="40%" cy="35%">
-          <stop offset="0%" stop-color="#2a2a4a" stop-opacity=".5"/>
-          <stop offset="100%" stop-color="#0a0a18" stop-opacity=".85"/>
-        </radialGradient>
-        <linearGradient id="bellyRing" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#f5c542" stop-opacity=".7"/>
-          <stop offset="50%" stop-color="#ff6b9d" stop-opacity=".5"/>
-          <stop offset="100%" stop-color="#f5c542" stop-opacity=".7"/>
-        </linearGradient>
-        <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <radialGradient id="headGrad" cx="40%" cy="35%">
-          <stop offset="0%" stop-color="#eeeef8"/>
-          <stop offset="100%" stop-color="#d0d0e8"/>
-        </radialGradient>
-        <radialGradient id="bodyGrad" cx="40%" cy="30%">
-          <stop offset="0%" stop-color="#e8e8f5"/>
-          <stop offset="100%" stop-color="#c8c8e0"/>
-        </radialGradient>
-      </defs>
+      <!-- 1. 兔子動畫 -->
+      <div class="machine-wrap" id="machineWrap" style="position:relative;width:100%;max-width:420px;margin:0 auto 16px;">
+        <!-- Rabbit image replacing SVG -->
+        <img src="https://raw.githubusercontent.com/hyde14g-sys/statu-gogo/main/file_0000000496472079acc72c8cb4a0b42.png" style="width:100%;height:auto;display:block;" alt="史塔兔">
+        <canvas id="bellyCanvas"></canvas>
+        <div class="belly-glow" id="bellyGlow"></div>
+      </div>
 
-      <!-- Ground shadow -->
-      <ellipse cx="250" cy="552" rx="120" ry="14" fill="rgba(0,0,0,.4)"/>
+      <!-- 2. 抽獎結果 -->
+      <div id="winnerArea" style="display:none;background:#13131e;border:1px solid #f5c542;border-radius:14px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:.82rem;color:#f5c542;font-weight:700;margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:.05em;">🏆 中獎名單</div>
+        <div id="winnerList" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;"></div>
+      </div>
 
-      <!-- ── LONG TALL EARS (卡通大長耳) ── -->
-      <!-- Left ear - tall rounded -->
-      <rect x="148" y="28" width="52" height="130" rx="26" fill="#dcdcf0"/>
-      <!-- Left ear inner -->
-      <rect x="158" y="42" width="30" height="100" rx="15" fill="#ff9ec8" opacity=".8"/>
-      <!-- Left ear highlight -->
-      <ellipse cx="168" cy="70" rx="7" ry="22" fill="rgba(255,255,255,.12)"/>
+      <!-- 3. 參加名單預覽 -->
+      <div id="nameListPreview" style="display:none;background:#13131e;border:1px solid #2a2a40;border-radius:12px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:.78rem;color:#6b6b9a;margin-bottom:8px;font-weight:700;">📋 參加名單 <span id="nameCountBadge" style="color:#f5c542;margin-left:6px;"></span></div>
+        <div id="nameListContent" style="font-size:.78rem;color:#a0a0c0;line-height:2;max-height:120px;overflow-y:auto;"></div>
+      </div>
 
-      <!-- Right ear - tall rounded -->
-      <rect x="300" y="28" width="52" height="130" rx="26" fill="#dcdcf0"/>
-      <!-- Right ear inner -->
-      <rect x="312" y="42" width="30" height="100" rx="15" fill="#ff9ec8" opacity=".8"/>
-      <!-- Right ear highlight -->
-      <ellipse cx="332" cy="70" rx="7" ry="22" fill="rgba(255,255,255,.12)"/>
+      <!-- 4. 控制區 -->
+      <div style="background:#13131e;border:1px solid #2a2a40;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;">
 
-      <!-- ── BODY (圓滾滾身體) ── -->
-      <ellipse cx="250" cy="400" rx="155" ry="160" fill="url(#bodyGrad)"/>
-      <!-- Body outline -->
-      <ellipse cx="250" cy="400" rx="155" ry="160" fill="none" stroke="#a0a0c8" stroke-width="3"/>
+        <!-- 中獎人數 + 開始/重置 -->
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:.82rem;color:#6b6b9a;white-space:nowrap;">中獎人數</label>
+          <input type="number" id="winCount" value="1" min="1" max="50" style="width:60px;background:#0d0d14;border:1px solid #2a2a40;border-radius:8px;color:#f5c542;font-family:'Space Mono',monospace;font-size:.95rem;font-weight:700;padding:6px 8px;text-align:center;outline:none;">
+          <button id="startBtn" onclick="startLottery()" style="flex:1;padding:11px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#f5c542,#e6b000);color:#111;font-size:.95rem;font-weight:900;cursor:pointer;font-family:'Noto Sans TC',sans-serif;min-width:120px;">🐰 開始抽獎</button>
+          <button id="resetBtn" onclick="resetLottery()" style="display:none;padding:11px 16px;border-radius:10px;border:1px solid #2a2a40;background:transparent;color:#6b6b9a;font-size:.88rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">↺ 重新抽獎</button>
+        </div>
 
-      <!-- ── HEAD (大圓頭) ── -->
-      <!-- Head is a large circle, lower than ears -->
-      <circle cx="250" cy="215" r="125" fill="url(#headGrad)"/>
-      <!-- Head outline -->
-      <circle cx="250" cy="215" r="125" fill="none" stroke="#a0a0c8" stroke-width="3"/>
-      <!-- Head highlight -->
-      <ellipse cx="205" cy="168" rx="38" ry="26" fill="rgba(255,255,255,.25)" transform="rotate(-20 205 168)"/>
+        <!-- 名單輸入 -->
+        <div>
+          <label style="font-size:.78rem;color:#6b6b9a;display:block;margin-bottom:6px;">✏️ 名單輸入（每行一個名字）</label>
+          <textarea id="manualNames" oninput="updateNamePreview()" placeholder="小蛇&#10;小兔&#10;阿花&#10;小明" style="width:100%;background:#0d0d14;border:1px solid #2a2a40;border-radius:8px;color:#f0f0f8;font-family:'Noto Sans TC',sans-serif;font-size:.85rem;padding:9px 12px;resize:vertical;min-height:80px;outline:none;line-height:1.8;"></textarea>
+        </div>
 
-      <!-- ── BELLY GLASS (透明肚子) ── -->
-      <circle cx="250" cy="415" r="128" fill="url(#bg)"/>
-      <circle cx="250" cy="415" r="128" fill="none" stroke="url(#bellyRing)" stroke-width="4" filter="url(#glow)"/>
-      <circle cx="250" cy="415" r="122" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
-      <!-- Belly glass shine -->
-      <ellipse cx="206" cy="358" rx="42" ry="26" fill="rgba(255,255,255,.08)" transform="rotate(-28 206 358)"/>
-      <ellipse cx="220" cy="370" rx="18" ry="10" fill="rgba(255,255,255,.13)" transform="rotate(-28 220 370)"/>
+        <!-- 號碼替代 -->
+        <div>
+          <label style="font-size:.78rem;color:#6b6b9a;display:block;margin-bottom:6px;">🔢 號碼替代（輸入數字自動產生號碼，例如 41 = 1號~41號）</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="numberInput" placeholder="輸入總人數" min="1" oninput="applyNumberList()" style="flex:1;background:#0d0d14;border:1px solid #2a2a40;border-radius:8px;color:#f0f0f8;font-size:.85rem;padding:7px 12px;outline:none;">
+            <span id="numberHint" style="font-size:.75rem;color:#6b6b9a;white-space:nowrap;"></span>
+          </div>
+        </div>
 
-      <!-- ── FACE ── -->
-      <!-- Eyes: big cute cartoon style -->
-      <circle cx="213" cy="205" r="22" fill="white"/>
-      <circle cx="287" cy="205" r="22" fill="white"/>
-      <!-- Pupil -->
-      <circle cx="216" cy="208" r="14" fill="#111128"/>
-      <circle cx="290" cy="208" r="14" fill="#111128"/>
-      <!-- Eye shine large -->
-      <circle cx="222" cy="200" r="7" fill="white" opacity=".95"/>
-      <circle cx="296" cy="200" r="7" fill="white" opacity=".95"/>
-      <!-- Eye shine small -->
-      <circle cx="226" cy="198" r="3" fill="white"/>
-      <circle cx="300" cy="198" r="3" fill="white"/>
-      <!-- Eye outline -->
-      <circle cx="213" cy="205" r="22" fill="none" stroke="#8888aa" stroke-width="2.5"/>
-      <circle cx="287" cy="205" r="22" fill="none" stroke="#8888aa" stroke-width="2.5"/>
+        <!-- 金額排名前30 -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button onclick="loadFB('amount')" style="padding:9px 18px;border-radius:9px;border:1px solid #f5c542;background:rgba(245,197,66,.1);color:#f5c542;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">💰 金額排名前30</button>
+          <button onclick="loadFB('order')" style="padding:9px 18px;border-radius:9px;border:1px solid #a78bfa;background:rgba(167,139,250,.1);color:#a78bfa;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🏆 訂單排名前30</button>
+          <div id="fbS1" style="font-size:.75rem;color:#6b6b9a;"></div>
+          <div id="fbS2" style="display:none;"></div>
+          <div id="fbP1" style="display:none;"></div>
+          <div id="fbP2" style="display:none;"></div>
+        </div>
 
-      <!-- Nose: triangle cute -->
-      <path d="M242 230 L258 230 L250 240 Z" fill="#ff7eb3"/>
-      <!-- Nose highlight -->
-      <ellipse cx="246" cy="231" rx="4" ry="2.5" fill="rgba(255,255,255,.5)"/>
-
-      <!-- Mouth: W shape -->
-      <path d="M235 243 Q243 253 250 247 Q257 253 265 243" stroke="#ff7eb3" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-
-      <!-- Cheeks: big round blush -->
-      <circle cx="185" cy="225" r="22" fill="#ff6b9d" opacity=".22"/>
-      <circle cx="315" cy="225" r="22" fill="#ff6b9d" opacity=".22"/>
-
-      <!-- ── ARMS (stubby cute arms) ── -->
-      <!-- Left arm -->
-      <ellipse cx="105" cy="395" rx="35" ry="52" fill="#dcdcf0" transform="rotate(20 105 395)"/>
-      <ellipse cx="105" cy="395" rx="35" ry="52" fill="none" stroke="#a0a0c8" stroke-width="2" transform="rotate(20 105 395)"/>
-      <!-- Left paw (3 bumps) -->
-      <circle cx="82" cy="448" r="16" fill="#c8c8e0"/>
-      <circle cx="74" cy="442" r="9" fill="#d8d8ee"/>
-      <circle cx="90" cy="442" r="9" fill="#d8d8ee"/>
-      <circle cx="82" cy="435" r="9" fill="#d8d8ee"/>
-
-      <!-- Right arm -->
-      <ellipse cx="395" cy="395" rx="35" ry="52" fill="#dcdcf0" transform="rotate(-20 395 395)"/>
-      <ellipse cx="395" cy="395" rx="35" ry="52" fill="none" stroke="#a0a0c8" stroke-width="2" transform="rotate(-20 395 395)"/>
-      <!-- Right paw -->
-      <circle cx="418" cy="448" r="16" fill="#c8c8e0"/>
-      <circle cx="410" cy="442" r="9" fill="#d8d8ee"/>
-      <circle cx="426" cy="442" r="9" fill="#d8d8ee"/>
-      <circle cx="418" cy="435" r="9" fill="#d8d8ee"/>
-
-      <!-- ── FEET (big cute feet) ── -->
-      <ellipse cx="185" cy="535" rx="55" ry="24" fill="#dcdcf0"/>
-      <ellipse cx="185" cy="535" rx="55" ry="24" fill="none" stroke="#a0a0c8" stroke-width="2"/>
-      <ellipse cx="315" cy="535" rx="55" ry="24" fill="#dcdcf0"/>
-      <ellipse cx="315" cy="535" rx="55" ry="24" fill="none" stroke="#a0a0c8" stroke-width="2"/>
-      <!-- Foot toes -->
-      <circle cx="158" cy="528" r="8" fill="#c8c8e0"/>
-      <circle cx="175" cy="524" r="8" fill="#c8c8e0"/>
-      <circle cx="193" cy="524" r="8" fill="#c8c8e0"/>
-      <circle cx="210" cy="528" r="8" fill="#c8c8e0"/>
-      <circle cx="288" cy="528" r="8" fill="#c8c8e0"/>
-      <circle cx="305" cy="524" r="8" fill="#c8c8e0"/>
-      <circle cx="323" cy="524" r="8" fill="#c8c8e0"/>
-      <circle cx="340" cy="528" r="8" fill="#c8c8e0"/>
-
-      <!-- ── TAIL (fluffy tail) ── -->
-      <circle cx="396" cy="452" r="26" fill="#dcdcf0"/>
-      <circle cx="396" cy="452" r="26" fill="none" stroke="#a0a0c8" stroke-width="2"/>
-      <circle cx="390" cy="445" r="14" fill="rgba(255,255,255,.07)"/>
-
-      <!-- ── BOW TIE ── -->
-      <path d="M224 258 L250 270 L276 258 L264 272 L250 268 L236 272 Z" fill="#f5c542"/>
-      <circle cx="250" cy="265" r="6" fill="#f5c542"/>
-      <circle cx="250" cy="265" r="6" fill="none" stroke="#e6b000" stroke-width="1.5"/>
-
-      <!-- ── SPARKLES ── -->
-      <text x="70" y="155" font-size="18" fill="#f5c542" opacity=".6">✦</text>
-      <text x="415" y="150" font-size="14" fill="#ff6b9d" opacity=".6">✦</text>
-      <text x="445" y="310" font-size="10" fill="#f5c542" opacity=".45">✦</text>
-      <text x="45" y="305" font-size="14" fill="#ff9ec8" opacity=".5">✦</text>
-      <text x="450" y="430" font-size="9" fill="#60a5fa" opacity=".45">✦</text>
-      <text x="38" y="430" font-size="11" fill="#a78bfa" opacity=".4">✦</text>
-    </svg>
-    <canvas id="bellyCanvas"></canvas>
-    <div class="belly-glow" id="bellyGlow"></div>
-  </div>
-
-  <!-- Controls -->
-  <div class="controls">
-    <div class="source-btns">
-      <button class="source-btn active" id="btnManual" onclick="setSource('manual')">✏️ 手動輸入</button>
-      <button class="source-btn" id="btnOrderRank" onclick="setSource('orderRank')">🏆 訂單數排行</button>
-      <button class="source-btn" id="btnAmountRank" onclick="setSource('amountRank')">💰 金額排行</button>
+      </div>
     </div>
-    <div id="manualPanel" class="setup-panel active">
-      <textarea id="manualNames" placeholder="每行一個名字：&#10;小蛇&#10;小兔&#10;阿花&#10;小明"></textarea>
-      <div class="note">每行一個名字，重複輸入可增加機率</div>
+
+    <!-- Spotlight -->
+    <div id="spotlight" style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;flex-direction:column;background-image:url(https://raw.githubusercontent.com/hyde14g-sys/statu-gogo/main/file_00000000d8e07207bf0be0ae37f07c0d.png);background-size:cover;background-position:center;">
+      <div id="confWrap" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
+      <!-- Winner ball - enlarged to half screen width -->
+      <div id="spotBall" style="width:min(50vw,300px);height:min(50vw,300px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:min(5vw,2rem);font-weight:900;color:rgba(0,0,0,.85);text-align:center;padding:20px;word-break:break-all;line-height:1.3;animation:spotIn .7s cubic-bezier(.34,1.56,.64,1) forwards;box-shadow:0 0 60px rgba(255,255,255,.5),0 0 120px rgba(255,255,255,.2);position:relative;z-index:2;"></div>
+      <div id="spotName" style="margin-top:16px;font-size:1.6rem;font-weight:900;color:#fff;text-shadow:0 0 20px rgba(0,0,0,.8),0 2px 4px rgba(0,0,0,.9);animation:fadeUp .5s .4s ease forwards;opacity:0;position:relative;z-index:2;"></div>
+      <div id="spotSub" style="margin-top:6px;font-size:.9rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);animation:fadeUp .5s .6s ease forwards;opacity:0;position:relative;z-index:2;"></div>
+      <button id="spotBtn" onclick="nextWinner()" style="margin-top:22px;padding:12px 32px;border-radius:10px;border:3px solid #fff;background:rgba(0,0,0,.4);color:#fff;font-size:1.1rem;font-weight:900;cursor:pointer;font-family:'Noto Sans TC',sans-serif;animation:fadeUp .5s .8s ease forwards;opacity:0;transition:all .15s;position:relative;z-index:2;backdrop-filter:blur(4px);">繼續抽獎 ▶</button>
     </div>
-    <div id="orderRankPanel" class="setup-panel">
-      <div class="note" style="margin-bottom:8px;color:var(--muted)">自動從客戶資料庫讀取</div>
-      <button class="btn-load" onclick="loadFB('order')">🔄 載入訂單排行名單</button>
-      <div id="fbS1" class="note"></div>
-      <div id="fbP1" class="preview-names"></div>
-    </div>
-    <div id="amountRankPanel" class="setup-panel">
-      <div class="note" style="margin-bottom:8px;color:var(--muted)">自動從客戶資料庫讀取</div>
-      <button class="btn-load" onclick="loadFB('amount')">🔄 載入金額排行名單</button>
-      <div id="fbS2" class="note"></div>
-      <div id="fbP2" class="preview-names"></div>
-    </div>
-    <div class="count-row" style="margin-top:12px">
-      <label>中獎人數：</label>
-      <input type="number" class="count-input" id="winCount" value="1" min="1" max="50">
-      <span style="font-size:.8rem;color:var(--muted)">人</span>
-      <button class="btn-start" id="startBtn" onclick="startLottery()">🐰 開始抽獎</button>
-      <button class="btn-reset" id="resetBtn" onclick="resetLottery()">↺ 重置</button>
-    </div>
-  </div>
-
-  <div class="winner-area" id="winnerArea">
-    <div class="winner-title">🏆 中獎名單</div>
-    <div class="winner-list" id="winnerList"></div>
-  </div>
-</div>
-
-<!-- Spotlight -->
-<div id="spotlight">
-  <div class="confetti-wrap" id="confWrap"></div>
-  <div class="spotlight-rabbit">🐰</div>
-  <div class="spotlight-ball" id="spotBall"></div>
-  <div class="spotlight-name" id="spotName"></div>
-  <div class="spotlight-sub" id="spotSub"></div>
-  <button class="spotlight-btn" id="spotBtn" onclick="nextWinner()">繼續抽獎 ▶</button>
-</div>
-
-
-
   </div>
 
   <!-- CATEGORY MANAGE MODAL -->
@@ -3499,7 +3369,10 @@ function openLottery() {
   overlay.classList.add('show');
   overlay.scrollTop = 0;
   document.body.style.overflow = 'hidden';
-  setTimeout(() => { if(window._lotteryInit) window._lotteryInit(); }, 200);
+  setTimeout(() => {
+    if(window.initLotteryStars) window.initLotteryStars();
+    if(window._lotteryInit) window._lotteryInit();
+  }, 200);
 }
 function closeLottery() {
   document.getElementById('lotteryOverlay').classList.remove('show');
@@ -3511,17 +3384,30 @@ function closeLottery() {
 ;(function(){
 "use strict";
 
-// Stars
-(()=>{const w=document.getElementById('stars');for(let i=0;i<55;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2+1;s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;w.appendChild(s);}})();
+// Stars - init when lottery opens
+function initLotteryStars(){
+  const w=document.getElementById('lotteryStars');
+  if(!w||w.children.length>0)return;
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    w.appendChild(s);
+  }
+}
 
 // Belly canvas setup
-const SVG_W=500,SVG_H=580,BC_SVG=250,BY_SVG=415,BR_SVG=125;
+const SVG_W=500,SVG_H=580,BC_SVG=250,BY_SVG=375,BR_SVG=118;
 let bc=document.getElementById('bellyCanvas'),ctx=bc.getContext('2d');
 let cScale=1,bCX,bCY,bR;
 
 function layoutCanvas(){
-  const svg=document.getElementById('rabbitSvg');
-  const rect=svg.getBoundingClientRect();
+  // Use rabbit image instead of SVG
+  const img = document.querySelector('#machineWrap img') || document.getElementById('rabbitSvg');
+  if(!img) return;
+  const rect=img.getBoundingClientRect();
+  const wrap=document.getElementById('machineWrap');
+  const wRect=wrap.getBoundingClientRect();
   cScale=rect.width/SVG_W;
   bCX=BC_SVG*cScale; bCY=BY_SVG*cScale; bR=BR_SVG*cScale;
   const left=bCX-bR,top=bCY-bR,size=bR*2;
@@ -3531,10 +3417,10 @@ function layoutCanvas(){
   ctx=bc.getContext('2d');
   ctx.scale(devicePixelRatio,devicePixelRatio);
   const g=document.getElementById('bellyGlow');
-  g.style.left=(left-4)+'px'; g.style.top=(top-4)+'px';
-  g.style.width=(size+8)+'px'; g.style.height=(size+8)+'px';
+  if(g){g.style.left=(left-4)+'px'; g.style.top=(top-4)+'px';
+  g.style.width=(size+8)+'px'; g.style.height=(size+8)+'px';}
 }
-window.addEventListener('resize',()=>{layoutCanvas();});
+window.addEventListener('resize',()=>{ if(document.getElementById('lotteryOverlay').classList.contains('show')) layoutCanvas(); });
 window.addEventListener('load',layoutCanvas);
 
 // Colors
@@ -3615,8 +3501,9 @@ function setSource(s){
 }
 
 function getNames(){
-  if(src==='manual')return document.getElementById('manualNames').value.split('\n').map(n=>n.trim()).filter(Boolean);
-  return loaded;
+  const ta=document.getElementById('manualNames');
+  if(!ta)return[];
+  return ta.value.split('\n').map(n=>n.trim()).filter(Boolean);
 }
 
 // Firebase
@@ -3643,9 +3530,11 @@ async function loadFB(mode){
     });
     const sorted=Object.entries(byName).sort((a,b)=>
       mode==='order'?b[1].orders-a[1].orders:b[1].amount-a[1].amount);
-    loaded=sorted.map(([n])=>n);
-    stEl.textContent=`✅ 已載入 ${loaded.length} 位`;
-    pvEl.innerHTML=loaded.map((n,i)=>`<span style="margin-right:8px">${i+1}. ${n}</span>`).join('');
+    loaded=sorted.slice(0,30).map(([n])=>n);
+    stEl.textContent=`✅ 已載入前 ${loaded.length} 位，按開始抽獎`;
+    // Update manual names textarea with loaded names
+    const ta = document.getElementById('manualNames');
+    if(ta) { ta.value = loaded.join('\n'); updateNamePreview(); }
   }catch(e){stEl.textContent='❌ '+e.message;}
 }
 
@@ -3735,7 +3624,14 @@ function pickNext(){
   const name=pending[wIdx];
   setStatus(`🎯 抽出第 ${wIdx+1} 位...`,true);
   const wb=balls.find(b=>b.name===name&&!b.winner);
-  if(wb){wb.winner=true;wb.vx=0;wb.vy=0;setTimeout(()=>showSpot(name,wb.color,wIdx+1),800);}
+  if(wb){
+    wb.winner=true;wb.vx=0;wb.vy=0;
+    // Hide all other non-winner balls
+    setTimeout(()=>{
+      balls.forEach(b=>{ if(!b.winner) b.alpha=0; });
+    }, 400);
+    setTimeout(()=>showSpot(name,wb.color,wIdx+1),900);
+  }
 }
 
 function showSpot(name,color,num){
@@ -3772,6 +3668,8 @@ function showSpot(name,color,num){
 function nextWinner(){
   document.getElementById('spotlight').classList.remove('show');
   addWBall(pending[wIdx]);wIdx++;
+  // Restore remaining non-winner balls
+  balls.forEach(b=>{ if(!b.winner) b.alpha=1; });
   if(wIdx<pending.length){spd=.7;startBGM();setStatus('🎰 繼續滾動...',true);setTimeout(pickNext,2600);}
   else finishLottery();
 }
@@ -3821,11 +3719,14 @@ window._lotteryStop = function(){
 };
 
 // Expose all lottery functions to global scope (needed for onclick handlers)
-window.setSource = setSource;
+window.initLotteryStars = initLotteryStars;
 window.loadFB = loadFB;
 window.startLottery = startLottery;
 window.resetLottery = resetLottery;
 window.nextWinner = nextWinner;
+window.updateNamePreview = updateNamePreview;
+window.applyNumberList = applyNumberList;
+window.setSource = function(){};
 })();
 
 // ── Typing Demo ──────────────────────────────────────────────
