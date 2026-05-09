@@ -1315,13 +1315,13 @@
       <div class="note">每行一個名字，重複輸入可增加機率</div>
     </div>
     <div id="orderRankPanel" class="setup-panel">
-      <textarea id="firebaseConfig" style="min-height:65px;font-family:'Space Mono',monospace;font-size:.72rem" placeholder='貼上 Firebase config：{"apiKey":"...","projectId":"...","appId":"..."}'></textarea>
+      <div class="note" style="margin-bottom:8px;color:var(--muted)">自動從客戶資料庫讀取</div>
       <button class="btn-load" onclick="loadFB('order')">🔄 載入訂單排行名單</button>
       <div id="fbS1" class="note"></div>
       <div id="fbP1" class="preview-names"></div>
     </div>
     <div id="amountRankPanel" class="setup-panel">
-      <textarea id="firebaseConfig2" style="min-height:65px;font-family:'Space Mono',monospace;font-size:.72rem" placeholder='貼上 Firebase config：{"apiKey":"...","projectId":"...","appId":"..."}'></textarea>
+      <div class="note" style="margin-bottom:8px;color:var(--muted)">自動從客戶資料庫讀取</div>
       <button class="btn-load" onclick="loadFB('amount')">🔄 載入金額排行名單</button>
       <div id="fbS2" class="note"></div>
       <div id="fbP2" class="preview-names"></div>
@@ -3621,23 +3621,28 @@ function getNames(){
 
 // Firebase
 async function loadFB(mode){
-  const cfgEl=document.getElementById(mode==='order'?'firebaseConfig':'firebaseConfig2');
   const stEl=document.getElementById(mode==='order'?'fbS1':'fbS2');
   const pvEl=document.getElementById(mode==='order'?'fbP1':'fbP2');
-  const raw=cfgEl.value.trim();
-  if(!raw){stEl.textContent='⚠️ 請貼上 Firebase 設定';return;}
-  let cfg;try{cfg=JSON.parse(raw);}catch{stEl.textContent='❌ JSON 格式錯誤';return;}
+
+  // 直接使用主程式已載入的 customerDb
+  const db = window.customerDb || [];
+  console.log('customerDb length:', db.length, window.customerDb);
+  if(db.length === 0){
+    stEl.textContent=`⚠️ 資料庫尚未載入（目前 ${db.length} 筆），請稍後再試`;
+    return;
+  }
+
   stEl.textContent='載入中...';
   try{
-    const{initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const{getFirestore,collection,getDocs}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const app=getApps().length?getApps()[0]:initializeApp(cfg);
-    const db=getFirestore(app);
-    const snap=await getDocs(collection(db,'customers'));
-    const docs=snap.docs.map(d=>d.data()).filter(r=>!r.mergedInto&&!r.isCreditOrder);
+    const docs = db.filter(r=>!r.mergedInto&&!r.isCreditOrder);
     const byName={};
-    docs.forEach(r=>{if(!byName[r.name])byName[r.name]={orders:0,amount:0};byName[r.name].orders++;byName[r.name].amount+=(r.totalAmount||0);});
-    const sorted=Object.entries(byName).sort((a,b)=>mode==='order'?b[1].orders-a[1].orders:b[1].amount-a[1].amount);
+    docs.forEach(r=>{
+      if(!byName[r.name])byName[r.name]={orders:0,amount:0};
+      byName[r.name].orders++;
+      byName[r.name].amount+=(r.totalAmount||0);
+    });
+    const sorted=Object.entries(byName).sort((a,b)=>
+      mode==='order'?b[1].orders-a[1].orders:b[1].amount-a[1].amount);
     loaded=sorted.map(([n])=>n);
     stEl.textContent=`✅ 已載入 ${loaded.length} 位`;
     pvEl.innerHTML=loaded.map((n,i)=>`<span style="margin-right:8px">${i+1}. ${n}</span>`).join('');
