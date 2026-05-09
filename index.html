@@ -1196,7 +1196,8 @@
         <div>
           <label style="font-size:.78rem;color:#6b6b9a;display:block;margin-bottom:6px;">🔢 號碼替代（輸入數字自動產生號碼，例如 41 = 1號~41號）</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="numberInput" placeholder="輸入總人數" min="1" oninput="applyNumberList()" style="flex:1;background:#0d0d14;border:1px solid #2a2a40;border-radius:8px;color:#f0f0f8;font-size:.85rem;padding:7px 12px;outline:none;">
+            <input type="number" id="numberInput" placeholder="輸入總人數" min="1" style="flex:1;background:#0d0d14;border:1px solid #2a2a40;border-radius:8px;color:#f0f0f8;font-size:.85rem;padding:7px 12px;outline:none;" onkeydown="if(event.key==='Enter') applyNumberList()">
+            <button onclick="applyNumberList()" style="padding:7px 14px;border-radius:8px;border:1px solid #a78bfa;background:rgba(167,139,250,.1);color:#a78bfa;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;">✔ 確認</button>
             <span id="numberHint" style="font-size:.75rem;color:#6b6b9a;white-space:nowrap;"></span>
           </div>
         </div>
@@ -3430,7 +3431,7 @@ function lighten(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16
 
 class Ball{
   constructor(n,c,r){
-    this.name=n;this.color=c;this.r=r;this.winner=false;
+    this.name=n;this.color=c;this.r=r;this.winner=false;this.alpha=1;
     const a=Math.random()*Math.PI*2,d=Math.random()*(bR-r-6);
     this.x=Math.cos(a)*d; this.y=Math.sin(a)*d;
     this.vx=(Math.random()-.5)*7; this.vy=(Math.random()-.5)*7;
@@ -3460,8 +3461,10 @@ class Ball{
     }
   }
   draw(ctx){
+    if(this.alpha<=0)return;
     const cx=this.x+bR,cy=this.y+bR;
     ctx.save();
+    ctx.globalAlpha=this.alpha;
     ctx.beginPath();ctx.arc(cx+1,cy+2,this.r,0,Math.PI*2);
     ctx.fillStyle='rgba(0,0,0,.2)';ctx.fill();
     const g=ctx.createRadialGradient(cx-this.r*.3,cy-this.r*.3,this.r*.1,cx,cy,this.r);
@@ -3586,7 +3589,7 @@ function startLottery(){
   document.getElementById('winnerArea').classList.remove('show');
   document.getElementById('winnerList').innerHTML='';
   document.getElementById('startBtn').disabled=true;
-  document.getElementById('resetBtn').style.display='none';
+  document.getElementById('resetBtn').style.display='';
   layoutCanvas();
   const sh=[...names].sort(()=>Math.random()-.5);
   pending=sh.slice(0,wc);
@@ -3626,11 +3629,21 @@ function pickNext(){
   const wb=balls.find(b=>b.name===name&&!b.winner);
   if(wb){
     wb.winner=true;wb.vx=0;wb.vy=0;
-    // Hide all other non-winner balls
+    // Fade out other balls smoothly
+    let fadeStart=null;
+    function fadeOut(ts){
+      if(!fadeStart)fadeStart=ts;
+      const prog=Math.min(1,(ts-fadeStart)/400);
+      balls.forEach(b=>{if(!b.winner)b.alpha=1-prog;});
+      if(prog<1)requestAnimationFrame(fadeOut);
+    }
+    setTimeout(()=>requestAnimationFrame(fadeOut),200);
+    // Animate winner ball to center then show spotlight
     setTimeout(()=>{
-      balls.forEach(b=>{ if(!b.winner) b.alpha=0; });
-    }, 400);
-    setTimeout(()=>showSpot(name,wb.color,wIdx+1),900);
+      animateWinnerToCenter(wb,()=>{
+        setTimeout(()=>showSpot(name,wb.color,wIdx+1),300);
+      });
+    },400);
   }
 }
 
@@ -3667,9 +3680,20 @@ function showSpot(name,color,num){
 
 function nextWinner(){
   document.getElementById('spotlight').classList.remove('show');
-  addWBall(pending[wIdx]);wIdx++;
-  // Restore remaining non-winner balls
-  balls.forEach(b=>{ if(!b.winner) b.alpha=1; });
+  addWBall(pending[wIdx]);
+  // Hide winner ball from canvas (it's now in winner list)
+  const wb=balls.find(b=>b.name===pending[wIdx]&&b.winner);
+  if(wb)wb.alpha=0;
+  wIdx++;
+  // Fade in remaining balls
+  let fadeInStart=null;
+  function fadeIn(ts){
+    if(!fadeInStart)fadeInStart=ts;
+    const prog=Math.min(1,(ts-fadeInStart)/400);
+    balls.forEach(b=>{if(!b.winner)b.alpha=prog;});
+    if(prog<1)requestAnimationFrame(fadeIn);
+  }
+  requestAnimationFrame(fadeIn);
   if(wIdx<pending.length){spd=.7;startBGM();setStatus('🎰 繼續滾動...',true);setTimeout(pickNext,2600);}
   else finishLottery();
 }
@@ -3710,6 +3734,61 @@ function setStatus(msg,h=false){
   el.textContent=msg;el.className='status-bar'+(h?' highlight':'');
 }
 
+
+// ── Helper functions ─────────────────────────────────────────
+function updateNamePreview(){
+  const ta=document.getElementById('manualNames');
+  const preview=document.getElementById('nameListPreview');
+  const previewContent=document.getElementById('nameListContent');
+  const badge=document.getElementById('nameCountBadge');
+  if(!ta)return;
+  const names=ta.value.split('\n').map(n=>n.trim()).filter(Boolean);
+  if(names.length===0){if(preview)preview.style.display='none';return;}
+  if(preview)preview.style.display='block';
+  if(badge)badge.textContent=`共 ${names.length} 人`;
+  if(previewContent)previewContent.innerHTML=names.map((n,i)=>
+    `<span style="display:inline-block;background:rgba(245,197,66,.08);border-radius:5px;padding:2px 8px;margin:2px;">${i+1}. ${n}</span>`
+  ).join('');
+}
+
+function applyNumberList(){
+  const input=document.getElementById('numberInput');
+  const hint=document.getElementById('numberHint');
+  const ta=document.getElementById('manualNames');
+  if(!input||!ta)return;
+  const n=parseInt(input.value);
+  if(!n||n<1){if(hint)hint.textContent='';return;}
+  // Generate 1~N
+  const nums=[];
+  for(let i=1;i<=n;i++) nums.push(i+'號');
+  ta.value=nums.join('\n');
+  if(hint)hint.textContent=`✅ 已產生 1~${n} 號`;
+  updateNamePreview();
+}
+
+// ── Winner ball animate to center ────────────────────────────
+let winnerAnimating=false;
+let winnerAnimProgress=0;
+
+function animateWinnerToCenter(wb, onDone){
+  if(!wb)return;
+  const startX=wb.x, startY=wb.y, startR=wb.r;
+  const targetX=0, targetY=0, targetR=bR*0.72;
+  const duration=600;
+  let start=null;
+  winnerAnimating=true;
+  function step(ts){
+    if(!start)start=ts;
+    const prog=Math.min(1,(ts-start)/duration);
+    const ease=1-Math.pow(1-prog,3);
+    wb.x=startX+(targetX-startX)*ease;
+    wb.y=startY+(targetY-startY)*ease;
+    wb.r=startR+(targetR-startR)*ease;
+    if(prog<1){requestAnimationFrame(step);}
+    else{winnerAnimating=false;if(onDone)onDone();}
+  }
+  requestAnimationFrame(step);
+}
 
 // Expose hooks
 window._lotteryInit = function(){ if(typeof layoutCanvas==='function') layoutCanvas(); };
