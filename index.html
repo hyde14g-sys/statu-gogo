@@ -1163,6 +1163,11 @@
         <div class="belly-glow" id="bellyGlow"></div>
       </div>
 
+      <!-- 中獎人名稱框 -->
+      <div id="winnerNameBox" style="display:none;text-align:center;margin:10px auto 4px;max-width:420px;">
+        <div style="display:inline-block;background:linear-gradient(135deg,#f5c542,#e6b000);color:#111;font-size:1.3rem;font-weight:900;padding:10px 28px;border-radius:30px;box-shadow:0 4px 18px rgba(245,197,66,0.5);letter-spacing:0.05em;font-family:'Noto Sans TC',sans-serif;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards;" id="winnerNameText"></div>
+      </div>
+
       <!-- 2. 抽獎結果 -->
       <div id="winnerArea" style="display:none;background:#13131e;border:1px solid #f5c542;border-radius:14px;padding:14px;margin-bottom:14px;">
         <div style="font-size:.82rem;color:#f5c542;font-weight:700;margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:.05em;">🏆 中獎名單</div>
@@ -3398,7 +3403,7 @@ function initLotteryStars(){
 }
 
 // Belly canvas setup
-const SVG_W=500,SVG_H=580,BC_SVG=250,BY_SVG=375,BR_SVG=118;
+const SVG_W=500,SVG_H=580,BC_SVG=250,BY_SVG=280,BR_SVG=115;
 let bc=document.getElementById('bellyCanvas'),ctx=bc.getContext('2d');
 let cScale=1,bCX,bCY,bR;
 
@@ -3618,6 +3623,7 @@ function loop(){
   }
   balls.forEach(b=>b.draw(ctx));
   ctx.restore();
+
   raf=requestAnimationFrame(loop);
 }
 
@@ -3680,6 +3686,9 @@ function showSpot(name,color,num){
 
 function nextWinner(){
   document.getElementById('spotlight').classList.remove('show');
+  // Hide name box
+  const nb=document.getElementById('winnerNameBox');
+  if(nb) nb.style.display='none';
   addWBall(pending[wIdx]);
   // Hide winner ball from canvas (it's now in winner list)
   const wb=balls.find(b=>b.name===pending[wIdx]&&b.winner);
@@ -3719,6 +3728,9 @@ function finishLottery(){
 
 function resetLottery(){
   stopBGM();cancelAnimationFrame(raf);running=false;balls=[];
+  winnerLabel='';
+  const nb2=document.getElementById('winnerNameBox');
+  if(nb2) nb2.style.display='none';
   document.getElementById('bellyGlow').classList.remove('active');
   ctx.clearRect(0,0,bR*2,bR*2);
   document.getElementById('winnerArea').classList.remove('show');
@@ -3770,13 +3782,18 @@ function applyNumberList(){
 let winnerAnimating=false;
 let winnerAnimProgress=0;
 
+let winnerLabel = '';
+
 function animateWinnerToCenter(wb, onDone){
   if(!wb)return;
   const startX=wb.x, startY=wb.y, startR=wb.r;
-  const targetX=0, targetY=0, targetR=bR*0.72;
-  const duration=600;
+  const targetX=0, targetY=0, targetR=bR*0.88;
+  const duration=800;
   let start=null;
   winnerAnimating=true;
+  winnerLabel='';
+  const nb2=document.getElementById('winnerNameBox');
+  if(nb2) nb2.style.display='none';
   function step(ts){
     if(!start)start=ts;
     const prog=Math.min(1,(ts-start)/duration);
@@ -3785,7 +3802,19 @@ function animateWinnerToCenter(wb, onDone){
     wb.y=startY+(targetY-startY)*ease;
     wb.r=startR+(targetR-startR)*ease;
     if(prog<1){requestAnimationFrame(step);}
-    else{winnerAnimating=false;if(onDone)onDone();}
+    else{
+      winnerAnimating=false;
+      winnerLabel=wb.name;
+      // Show HTML name box
+      const nb=document.getElementById('winnerNameBox');
+      const nt=document.getElementById('winnerNameText');
+      if(nb&&nt){
+        nt.textContent=wb.name;
+        nb.style.display='block';
+        nb.style.animation='none';
+      }
+      if(onDone)onDone();
+    }
   }
   requestAnimationFrame(step);
 }
